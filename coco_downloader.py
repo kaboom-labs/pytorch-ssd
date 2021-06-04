@@ -42,7 +42,7 @@ def unzip(path_from, path_to):
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description= "Download COCO 2017 training/validation/test datasets. Note that ground truth for test image is not public. Results must be uploaded to https://cocodataset.org/#upload for accuracy results")
 
-    parser.add_argument("--root", "--data", type=str, default="coco-data", help="The root directory that you want to store the image and annotation data")
+    parser.add_argument("--root", "--data", type=str, default="coco-data", help="The root directory that you want to store the image and annotation data. Default: ./coco-data")
     parser.add_argument("--num-workers", "--workers", type=int, default=4, help="Number of simultaneous downloads")
 
     args = parser.parse_args()
