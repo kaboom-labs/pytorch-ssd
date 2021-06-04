@@ -4,6 +4,11 @@ log
 data
 models
 
+coco-data
+oi-data
+runs
+
+
 eval_results/
 
 # Pytorch Models
@@ -23,3 +28,5 @@ __pycache__/
 
 # pyenv
 .python-version
+
+#

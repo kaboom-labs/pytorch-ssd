@@ -8,6 +8,11 @@ import argparse
 import itertools
 import torch
 
+import time
+import math
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
+
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
 
@@ -20,6 +25,7 @@ from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite
 from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite
 from vision.datasets.voc_dataset import VOCDataset
 from vision.datasets.open_images import OpenImagesDataset
+from vision.datasets.coco_dataset import COCODataset
 from vision.nn.multibox_loss import MultiboxLoss
 from vision.ssd.config import vgg_ssd_config
 from vision.ssd.config import mobilenetv1_ssd_config
@@ -31,7 +37,7 @@ parser = argparse.ArgumentParser(
 
 # Params for datasets
 parser.add_argument("--dataset-type", default="open_images", type=str,
-                    help='Specify dataset type. Currently supports voc and open_images.')
+                    help='Specify dataset type. Currently supports voc,open_images, and coco.')
 parser.add_argument('--datasets', '--data', nargs='+', default=["data"], help='Dataset directory path')
 parser.add_argument('--balance-data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
@@ -48,7 +54,7 @@ parser.add_argument('--mb2-width-mult', default=1.0, type=float,
 
 # Params for loading pretrained basenet or checkpoints.
 parser.add_argument('--base-net', help='Pretrained base model')
-parser.add_argument('--pretrained-ssd', default='models/mobilenet-v1-ssd-mp-0_675.pth', type=str, help='Pre-trained base model')
+parser.add_argument('--pretrained-ssd', default='', type=str, help='Pre-trained base model')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from')
 
@@ -106,6 +112,7 @@ if args.use_cuda and torch.cuda.is_available():
 
 
 def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
+    sub_epoch = math.ceil(len(loader)/debug_steps)*epoch # subdivide epoch into sub-epochs for reporting to tensorboard
     net.train(True)
     running_loss = 0.0
     running_regression_loss = 0.0
@@ -136,6 +143,10 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
                 f"Avg Regression Loss {avg_reg_loss:.4f}, " +
                 f"Avg Classification Loss: {avg_clf_loss:.4f}"
             )
+            writer.add_scalar("Average Loss", avg_loss, sub_epoch)
+            writer.add_scalar("Average Regression Loss", avg_reg_loss, sub_epoch)
+            writer.add_scalar("Average Classification Loss", avg_clf_loss, sub_epoch)
+            sub_epoch += 1
             running_loss = 0.0
             running_regression_loss = 0.0
             running_classification_loss = 0.0
@@ -209,16 +220,25 @@ if __name__ == '__main__':
     logging.info("Prepare training datasets.")
     datasets = []
     for dataset_path in args.datasets:
-        if args.dataset_type == 'voc':
+        if args.dataset_type.lower() == 'voc':
             dataset = VOCDataset(dataset_path, transform=train_transform,
                                  target_transform=target_transform)
             label_file = os.path.join(args.checkpoint_folder, "labels.txt")
             store_labels(label_file, dataset.class_names)
             num_classes = len(dataset.class_names)
-        elif args.dataset_type == 'open_images':
+        elif args.dataset_type.lower() == 'open_images':
             dataset = OpenImagesDataset(dataset_path,
                  transform=train_transform, target_transform=target_transform,
                  dataset_type="train", balance_data=args.balance_data)
+            label_file = os.path.join(args.checkpoint_folder, "labels.txt")
+            store_labels(label_file, dataset.class_names)
+            logging.info(dataset)
+            num_classes = len(dataset.class_names)
+        elif args.dataset_type.lower() == 'coco':
+            dataset = COCODataset(dataset_path,
+                    transform=train_transform,
+                    target_transform=target_transform,
+                    dataset_type="train")
             label_file = os.path.join(args.checkpoint_folder, "labels.txt")
             store_labels(label_file, dataset.class_names)
             logging.info(dataset)
@@ -245,7 +265,13 @@ if __name__ == '__main__':
         val_dataset = OpenImagesDataset(dataset_path,
                                         transform=test_transform, target_transform=target_transform,
                                         dataset_type="test")
-        logging.info(val_dataset)
+
+    elif args.dataset_type == 'coco':
+        val_dataset = COCODataset(dataset_path,
+                                        transform=test_transform, 
+                                        target_transform=target_transform,
+                                        dataset_type="val")
+    logging.info(val_dataset)
     logging.info("Validation dataset size: {}".format(len(val_dataset)))
 
     val_loader = DataLoader(val_dataset, args.batch_size,
@@ -353,5 +379,8 @@ if __name__ == '__main__':
             model_path = os.path.join(args.checkpoint_folder, f"{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
             net.save(model_path)
             logging.info(f"Saved model {model_path}")
+
+    writer.flush()
+    writer.close()
 
     logging.info("Task done, exiting program.")

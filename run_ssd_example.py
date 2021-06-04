@@ -7,6 +7,8 @@ from vision.utils.misc import Timer
 import cv2
 import sys
 
+from icecream import ic 
+
 
 if len(sys.argv) < 5:
     print('Usage: python run_ssd_example.py <net type>  <model path> <label path> <image path>')
@@ -38,7 +40,7 @@ if net_type == 'vgg16-ssd':
 elif net_type == 'mb1-ssd':
     predictor = create_mobilenetv1_ssd_predictor(net, candidate_size=200)
 elif net_type == 'mb1-ssd-lite':
-    predictor = create_mobilenetv1_ssd_lite_predictor(net, candidate_size=200)
+    predictor = create_mobilenetv1_ssd_lite_nredictor(net, candidate_size=200)
 elif net_type == 'mb2-ssd-lite':
     predictor = create_mobilenetv2_ssd_lite_predictor(net, candidate_size=200)
 elif net_type == 'sq-ssd-lite':
@@ -52,11 +54,21 @@ boxes, labels, probs = predictor.predict(image, 10, 0.4)
 
 for i in range(boxes.size(0)):
     box = boxes[i, :]
-    cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (255, 255, 0), 4)
-    #label = f"""{voc_dataset.class_names[labels[i]]}: {probs[i]:.2f}"""
+
+    box = box.numpy()
+    ic(orig_image.shape)
+    ic(type(orig_image))
+    ic(box[0])
+    ic(box[1])
+    ic(box[2])
+    ic(box[3])
+    
+    cv2.rectangle(orig_image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 255, 0), 4)
+    # OpenCV needs python int, not numpy int. Manual casting fixes https://github.com/opencv/opencv/issues/15465
+    
     label = f"{class_names[labels[i]]}: {probs[i]:.2f}"
     cv2.putText(orig_image, label,
-                (box[0] + 20, box[1] + 40),
+                (int(box[0]) + 20, int(box[1]) + 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,  # font scale
                 (255, 0, 255),
