@@ -9,6 +9,8 @@ Thanks to @qfgaohao for the upstream implementation from:  [https://github.com/q
 
 # How to use COCO dataset to (pre)train
 
+**Pro tip: just run `./setup_coco` and skip steps 1~3.**
+
 ## 1. Download the 2017 Object Detection dataset using `coco_downloader.py`
 ```bash
 python3 coco_downloader.py --path coco-data
