@@ -11,6 +11,8 @@ Thanks to @qfgaohao for the upstream implementation from:  [https://github.com/q
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
+Warning: COCO Dataset is ~25GB, so make sure you have enough disk space.
+
 ## 1. Download the 2017 Object Detection dataset using `coco_downloader.py`
 ```bash
 python3 coco_downloader.py --path coco-data
