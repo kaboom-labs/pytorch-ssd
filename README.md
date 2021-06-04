@@ -13,13 +13,13 @@ Thanks to @qfgaohao for the upstream implementation from:  [https://github.com/q
 
 Warning: COCO Dataset is ~25GB, so make sure you have enough disk space.
 
-## 1. Download the 2017 Object Detection dataset using `coco_downloader.py`
+## 1. Download the COCO 2017 Object Detection dataset
 ```bash
 python3 coco_downloader.py --path coco-data
 ```
 will download necessary zip files to 'coco-data' folder and unzip them.
 
-## 2. (Optional) Check image files for corrupted data using `validate_image_files.py`
+## 2. (Optional) Check image files for corrupted data
 ```bash
 python3 validate_image_files.py --path coco-data/train2017
 python3 validate_image_files.py --path coco-data/test2017
