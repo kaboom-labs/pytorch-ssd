@@ -7,7 +7,7 @@ This repo implements [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs
 
 Thanks to @qfgaohao for the upstream implementation from:  [https://github.com/qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd)
 
-# How to use COCO dataset to (pre)train
+# How to use COCO dataset to (pre)train Object Detection
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
