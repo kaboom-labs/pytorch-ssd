@@ -6,10 +6,6 @@ import copy
 import os
 import logging
 
-#DEBUG
-from time import sleep
-from icecream import ic
-
 class OpenImagesDataset:
 
     def __init__(self, root,
@@ -91,16 +87,6 @@ class OpenImagesDataset:
                 'labels': labels
             })
         print('num images:  {:d}'.format(len(data)))
-        ic(type(data))
-        ic(len(data))
-        ic(data[:5])
-        ic(type(data[0]))
-        ic(type(class_names))
-        ic(len(class_names))
-        ic(class_names)
-        ic(type(class_dict))
-        ic(class_dict)
-        sleep(3)
         return data, class_names, class_dict
 
     def __len__(self):
