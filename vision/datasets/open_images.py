@@ -6,6 +6,10 @@ import copy
 import os
 import logging
 
+#DEBUG
+from time import sleep
+from icecream import ic
+
 class OpenImagesDataset:
 
     def __init__(self, root,
@@ -28,14 +32,19 @@ class OpenImagesDataset:
     def _getitem(self, index):
         image_info = self.data[index]
         image = self._read_image(image_info['image_id'])
+        
         # duplicate boxes to prevent corruption of dataset
         boxes = copy.copy(image_info['boxes'])
-        boxes[:, 0] *= image.shape[1]
+
+        # convert coordinates in range (0.0, 1.0) to pixels
+        boxes[:, 0] *= image.shape[1] 
         boxes[:, 1] *= image.shape[0]
         boxes[:, 2] *= image.shape[1]
         boxes[:, 3] *= image.shape[0]
+
         # duplicate labels to prevent corruption of dataset
         labels = copy.copy(image_info['labels'])
+        
         if self.transform:
             image, boxes, labels = self.transform(image, boxes, labels)
         if self.target_transform:
@@ -82,6 +91,16 @@ class OpenImagesDataset:
                 'labels': labels
             })
         print('num images:  {:d}'.format(len(data)))
+        ic(type(data))
+        ic(len(data))
+        ic(data[:5])
+        ic(type(data[0]))
+        ic(type(class_names))
+        ic(len(class_names))
+        ic(class_names)
+        ic(type(class_dict))
+        ic(class_dict)
+        sleep(3)
         return data, class_names, class_dict
 
     def __len__(self):

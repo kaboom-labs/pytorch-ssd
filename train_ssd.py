@@ -220,6 +220,7 @@ if __name__ == '__main__':
     logging.info("Prepare training datasets.")
     datasets = []
     for dataset_path in args.datasets:
+        dataset_path = os.path.abspath(dataset_path)
         if args.dataset_type.lower() == 'voc':
             dataset = VOCDataset(dataset_path, transform=train_transform,
                                  target_transform=target_transform)

@@ -30,6 +30,9 @@ Checking for corrupt images is a good idea before feeding them into PyTorch.
 There should be no problematic images. If this script finds many corrupt images, there might be a problem with your computer.
 
 ## 3. Fix COCO annotations
+
+[Download and make cocoapi python](https://github.com/cocodataset/cocoapi)
+
 COCO 2017 consists of 80 categories of objects.
 However, due to historical reasons, the 'id' number of each category does not line up with the number of categories.
 This becomes a problem in PyTorch MultiBox Loss.

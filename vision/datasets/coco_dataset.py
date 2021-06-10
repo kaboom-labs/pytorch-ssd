@@ -1,41 +1,55 @@
 import numpy as np
+import pathlib
 import cv2
-import torch
-import logging
-import os
-import copy
-
-import json
-import csv
 import pandas as pd
+import copy
+import os
+import logging
 
-from tqdm import tqdm
-import requests
+# COCO Dataset 
+from pycocotools.coco import COCO # install from cocoapi
+import numpy as np
+import skimage.io as io
 
-from icecream import ic
-import time
+class COCODataset:
 
-class COCODataset():
-    '''
-    PyTorch Dataset class for COCO. 
-    Must implement '__len__()' and '__getitem__()'. Other methods are auxiliary.
-    '''
-
-    def __init__(self, root, transform=None, target_transform=None, dataset_type="train"):
-        self.root = os.path.abspath(root)
-        self.class_stat = None
-        self.image_id_filename_dict = {} 
-        self.image_id_boxes_dict = {} # e.g. {391895 : [[199.84, 200.46, 77.71, 70.88],[234.22, 317.11, 149.39, 38.55]]}
-        self.image_id_labels_dict = {} # e.g. {391895: [1,10,2]}
+    def __init__(self, root,
+                 transform=None, target_transform=None,
+                 dataset_type="train", balance_data=False):
+        self.root = pathlib.Path(root)
+        self.dataset_type = dataset_type.lower()
+        self.coco = self._load_cocoapi()
         self.transform = transform
         self.target_transform = target_transform
-        self.dataset_type = dataset_type.lower()
 
         self.data, self.class_names, self.class_dict = self._read_data()
+        self.balance_data = balance_data
+        self.min_image_num = -1
+        if self.balance_data:
+            self.data = self._balance_data()
         self.ids = [info['image_id'] for info in self.data]
 
+        self.class_stat = None
+
+        self.id_to_filename = self._id_to_filename()
+
+    def _load_cocoapi(self):
+        annotation_file = os.path.join(self.root, 'annotations', f'instances_{self.dataset_type}2017.json')
+        logging.info(f'Loading annotations from {annotation_file}')
+
+        # initialize COCO API for instance annotations
+        return COCO(annotation_file)
+
+    def _id_to_filename(self):
+        convert_dict = {}
+
+        for img_id in self.coco.getImgIds():
+            img_filename = self.coco.loadImgs([img_id])[0]['file_name']
+            convert_dict.update({img_id : img_filename})
+
+        return convert_dict
+
     def _getitem(self, index):
-        # called every time the dataloader needs to load a new batch
         image_info = self.data[index]
         image = self._read_image(image_info['image_id'])
         # duplicate boxes to prevent corruption of dataset
@@ -66,86 +80,84 @@ class COCODataset():
         return image
 
     def _read_data(self):
-        # runs at initialization to parse annotation json and return metadata
-        annotation_json_path = os.path.join(self.root,"annotations", f"instances_{self.dataset_type}2017.json")
-        logging.info(f"Loading annotations from {annotation_json_path}")
 
-        with open(annotation_json_path, 'r') as j:
-            annotation_json = json.loads(j.read())
+        # get COCO categories
+        cats = self.coco.loadCats(self.coco.getCatIds())
+        pure_class_names = [cat['name'] for cat in cats]
+        class_names = pure_class_names + ['BACKGROUND'] # empty category- not sure why it exists but just copying open images dataset
+        class_dict = {class_name : i+1 for i,class_name in enumerate(pure_class_names)}
+        class_dict.update({'BACKGROUND':0})
 
-        class_names =  []
-        class_dict = {}
-        annot_data = []
+        # filling out data list
+        all_image_ids = self.coco.getImgIds() 
 
-        for category in annotation_json['categories']:
-            class_dict.update({category['id']:category['name']})
-            class_names.append(str(category['name']))
+        # how many images were skipped (nonexistent file)
+        skipped_images = 0
 
-        # image_id:filename dictionary for quicker lookup
-        for info in annotation_json['images']:
-            self.image_id_filename_dict.update({info['id']:info['file_name']})
+        # the following for loop fills this data list
+        data = []
+            # python list containing:
+            #   list of dictionaries for each image
+            #       where keys: 'image_id', 'boxes', 'labels'
+            #       value for 'image_id' is String
+            #       value for 'boxes' is a 2D numpy array, dtype=float32
+            #       value for 'labels' is a 1D numpy array, dtype= python int64
 
-        # image_id:boxes dictionary to group bbox's for each image
-        # since json stores every instance (bbox) as separate dictionary entry
-        for annotation in annotation_json['annotations']:
-            image_id = int(annotation['image_id'])
-            bbox = annotation['bbox']
-            label = annotation['category_id']
+        for image_id in all_image_ids:
 
-            image_filename = self.image_id_filename_dict[image_id]
-            img_path = os.path.join(self.root, self.dataset_type + '2017' , image_filename)
-            
-            # check if file exists
+            # check existence  of image file; otherwise skip that image_id
+            img_info = self.coco.loadImgs(ids=[image_id])
+            img_filename = img_info[0]['file_name']
+            img_path = os.path.join(self.root, self.dataset_type + '2017', img_filename)
             if os.path.isfile(img_path) is False:
-                logging.error(f"Missing ImageID {image_id} - dropping from annotations")
+                logging.error(f'Skipping image_id: {image_id}')
+                skipped_images += 1
                 continue
 
-            if image_id not in self.image_id_labels_dict.keys():
-                self.image_id_labels_dict.update({image_id:[annotation['category_id']]})
-                self.image_id_boxes_dict.update({image_id:[annotation['bbox']]})
-            else:
-                labels = self.image_id_labels_dict[image_id]
-                labels.append(label)
-                self.image_id_labels_dict.update({image_id: labels}) 
+            boxes = []
+            labels = []
 
-                boxes = self.image_id_boxes_dict[image_id]
-                boxes.append(bbox)
-                self.image_id_boxes_dict.update({image_id: boxes})
+            ann_ids = self.coco.getAnnIds(imgIds=[image_id])
+            ann = self.coco.loadAnns(ann_ids)
+            for instance in ann:
+                boxes.append(instance['bbox'])
+                labels += [instance['category_id']]
 
-            annot_data.append({
-                'image_id' : int(image_id),
-                'boxes': np.array(self.image_id_boxes_dict[image_id], dtype=np.float32),
-                'labels': np.array(self.image_id_labels_dict[image_id], dtype='int64'),
+            # convert to numpy arrays
+            boxes = np.array(boxes, dtype=np.float32)
+            labels = np.array(labels, dtype='int64')
+
+            data.append({
+                'image_id': image_id,
+                'boxes' : boxes,
+                'labels' : labels
                 })
 
-        print(f"Number of images: {len(annot_data)}")
-
-        return annot_data, class_names, class_dict
+        logging.warning(f'Out of {len(all_image_ids)} images, {skipped_images} have been skipped, leaving {len(all_image_ids) - skipped_images} to be used. \n\tSkipped images either have no annotation (and moved to an adjacent folder) or simply missing.')
+        #import IPython; IPython.embed(); exit(1)
+        return data, class_names, class_dict
 
     def __len__(self):
         return len(self.data)
 
     def __repr__(self):
         if self.class_stat is None:
-            self.class_stat = {name: 0 for name in self.class_names}
+            self.class_stat = {name: 0 for name in self.class_names[:-1]}
             for example in self.data:
                 for class_index in example['labels']:
-                    class_name = self.class_dict[class_index]
+                    class_name = self.class_names[class_index]
                     self.class_stat[class_name] += 1
         content = ["Dataset Summary:"
                    f"Number of Images: {len(self.data)}",
+                   f"Minimum Number of Images for a Class: {self.min_image_num}",
                    "Label Distribution:"]
         for class_name, num in self.class_stat.items():
             content.append(f"\t{class_name}: {num}")
         return "\n".join(content)
+
     def _read_image(self, image_id):
-        image_filename = self.image_id_filename_dict[image_id]
-        image_file = os.path.join(self.root,self.dataset_type + '2017',image_filename)
-        image = cv2.imread(image_file)
-        #print(image)
-        if image is None:
-            print("Image is None")
-            import IPython; IPython.embed();exit(1)
+        image_file = os.path.join(self.root, self.dataset_type + '2017', self.id_to_filename[image_id])
+        image = cv2.imread(str(image_file))
         if image.shape[2] == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         else:
@@ -153,4 +165,22 @@ class COCODataset():
         return image
 
     def _balance_data(self):
-        logging.error("_balance_data method has not been implemented for COCO")
+        logging.info('balancing data')
+        label_image_indexes = [set() for _ in range(len(self.class_names))]
+        for i, image in enumerate(self.data):
+            for label_id in image['labels']:
+                label_image_indexes[label_id].add(i)
+        label_stat = [len(s) for s in label_image_indexes]
+        self.min_image_num = min(label_stat[1:])
+        sample_image_indexes = set()
+        for image_indexes in label_image_indexes[1:]:
+            image_indexes = np.array(list(image_indexes))
+            sub = np.random.permutation(image_indexes)[:self.min_image_num]
+            sample_image_indexes.update(sub)
+        sample_data = [self.data[i] for i in sample_image_indexes]
+        return sample_data
+
+
+
+
+

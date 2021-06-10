@@ -28,8 +28,8 @@ class TrainAugmentation:
 
         Args:
             img: the output of cv.imread in RGB layout.
-            boxes: boundding boxes in the form of (x1, y1, x2, y2).
-            labels: labels of boxes.
+            boxes: bounding boxes in the form of (x1, y1, x2, y2) in pixels.
+            labels: 1-d array of labels of bounding boxes.
         """
         return self.augment(img, boxes, labels)
 
