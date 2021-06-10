@@ -7,17 +7,19 @@ This repo implements [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs
 
 Thanks to @qfgaohao for the upstream implementation from:  [https://github.com/qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd)
 
-# How to use COCO dataset to (pre)train
+# How to use COCO dataset to (pre)train Object Detection
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
-## 1. Download the 2017 Object Detection dataset using `coco_downloader.py`
+Warning: COCO Dataset is ~25GB, so make sure you have enough disk space.
+
+## 1. Download the COCO 2017 Object Detection dataset
 ```bash
 python3 coco_downloader.py --path coco-data
 ```
 will download necessary zip files to 'coco-data' folder and unzip them.
 
-## 2. (Optional) Check image files for corrupted data using `validate_image_files.py`
+## 2. (Optional) Check image files for corrupted data
 ```bash
 python3 validate_image_files.py --path coco-data/train2017
 python3 validate_image_files.py --path coco-data/test2017
