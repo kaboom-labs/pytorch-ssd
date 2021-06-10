@@ -17,6 +17,8 @@ import shutil
 import logging
 import argparse
 
+logging.basicConfig(level=logging.DEBUG)
+
 def fix_category_id(coco_dict: dict):
     coco_dict = copy.deepcopy(coco_dict)
     
@@ -41,6 +43,7 @@ def fix_category_id(coco_dict: dict):
     return coco_dict
 
 def move_empty_images(coco_dict: dict, coco_root: str, dataset_type: str):
+    # THIS IS A DANGEROUS FUNCTION: it breaks pytorch dataloader because it only moves files without unlinking the annotation file
     coco_dict = copy.deepcopy(coco_dict)
     
     all_images = set()
@@ -73,8 +76,7 @@ def move_empty_images(coco_dict: dict, coco_root: str, dataset_type: str):
     for image_id in no_annotation_images:
         image_filename = id_to_filename[image_id]
         from_image_path = os.path.join(coco_root, f"{dataset_type}2017", image_filename)
-        to_image_path = os.path.join(coco_root, rejects_dir)
-        shutil.move(from_image_path, to_image_path)
+        shutil.move(from_image_path, rejects_dir)
         counter += 1
     logging.warning(f"{counter} images have been moved out of {from_image_path}.")
 
@@ -94,6 +96,7 @@ if __name__ == "__main__":
         print("Fixing COCO label indexes...")
         coco_dict = fix_category_id(json_file)
         print("Moving images with no annotations to new folder...")
+        # WARNING: moving images causes problem.
         move_empty_images(coco_dict, coco_root, dataset_type)
         
         #rename old json

@@ -15,7 +15,7 @@ import requests
 from icecream import ic
 import time
 
-class COCODataset(torch.utils.data.Dataset):
+class COCODataset():
     '''
     PyTorch Dataset class for COCO. 
     Must implement '__len__()' and '__getitem__()'. Other methods are auxiliary.
@@ -35,6 +35,7 @@ class COCODataset(torch.utils.data.Dataset):
         self.ids = [info['image_id'] for info in self.data]
 
     def _getitem(self, index):
+        # called every time the dataloader needs to load a new batch
         image_info = self.data[index]
         image = self._read_image(image_info['image_id'])
         # duplicate boxes to prevent corruption of dataset
@@ -65,6 +66,7 @@ class COCODataset(torch.utils.data.Dataset):
         return image
 
     def _read_data(self):
+        # runs at initialization to parse annotation json and return metadata
         annotation_json_path = os.path.join(self.root,"annotations", f"instances_{self.dataset_type}2017.json")
         logging.info(f"Loading annotations from {annotation_json_path}")
 
@@ -73,6 +75,7 @@ class COCODataset(torch.utils.data.Dataset):
 
         class_names =  []
         class_dict = {}
+        annot_data = []
 
         for category in annotation_json['categories']:
             class_dict.update({category['id']:category['name']})
@@ -94,7 +97,7 @@ class COCODataset(torch.utils.data.Dataset):
             
             # check if file exists
             if os.path.isfile(img_path) is False:
-                logging.error("Missing ImageID {image_id} - dropping from annotations")
+                logging.error(f"Missing ImageID {image_id} - dropping from annotations")
                 continue
 
             if image_id not in self.image_id_labels_dict.keys():
@@ -109,29 +112,15 @@ class COCODataset(torch.utils.data.Dataset):
                 boxes.append(bbox)
                 self.image_id_boxes_dict.update({image_id: boxes})
 
-        data = []
-        for image_id in self.image_id_filename_dict:
-            image_id = int(image_id)
-            try:
-                data.append({
-                    'image_id' : int(image_id),
-                    'boxes': np.array(self.image_id_boxes_dict[image_id], dtype=np.float32),
-                    'labels': np.array(self.image_id_labels_dict[image_id], dtype='int64'),
-                    })
-            except KeyError:
-                # no annotations on image
-                # https://github.com/cocodataset/cocoapi/issues/76
-                data.append({
-                    'image_id' : int(image_id),
-                    'boxes': np.array([[]], dtype=np.float32),
-                    'labels': np.array([], dtype='int64'),
-                    })
+            annot_data.append({
+                'image_id' : int(image_id),
+                'boxes': np.array(self.image_id_boxes_dict[image_id], dtype=np.float32),
+                'labels': np.array(self.image_id_labels_dict[image_id], dtype='int64'),
+                })
 
+        print(f"Number of images: {len(annot_data)}")
 
-
-        print(f"Number of images: {len(data)}")
-
-        return data, class_names, class_dict
+        return annot_data, class_names, class_dict
 
     def __len__(self):
         return len(self.data)
@@ -153,6 +142,10 @@ class COCODataset(torch.utils.data.Dataset):
         image_filename = self.image_id_filename_dict[image_id]
         image_file = os.path.join(self.root,self.dataset_type + '2017',image_filename)
         image = cv2.imread(image_file)
+        #print(image)
+        if image is None:
+            print("Image is None")
+            import IPython; IPython.embed();exit(1)
         if image.shape[2] == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         else:

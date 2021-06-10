@@ -101,7 +101,7 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser(
             description = "Validate images by reading with scikit-image. Option to delete any that aren't.")
     parser.add_argument('--path', type=str, help='Path to folder containing images')
-    parser.add_argument('--num-workers', default=1, type=int, help='Number of concurrent workers. Match with number of CPU cores.')
+    parser.add_argument('--num-workers', default=12, type=int, help='Number of concurrent workers. Match with number of CPU cores.')
     args = parser.parse_args()
 
     main(args)
