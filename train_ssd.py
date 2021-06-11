@@ -347,7 +347,6 @@ if __name__ == '__main__':
     timer.start("Load Model")
     if args.resume:
         logging.info(f"Resume from the model {args.resume}")
-        net.load(args.resume)
 
         combo_checkpoint = torch.load(args.resume)
         last_epoch = checkpoint['epoch']
@@ -355,10 +354,14 @@ if __name__ == '__main__':
         optimizer_state_dict = checkpoint['optimizer']
         scheduler = checkpoint['scheduler']
 
+        # load state dicts into model and optimizer
+        net.load_state_dict(net_state_dict)
+        optimizer.load_state_dict(optimizer_state_dict)
+
         net = net.to(DEVICE)
+        optimizer_to(optimizer, DEVICE)
         if args.use_cuda and torch.cuda.is_available():
             torch.cuda.empty_cache()
-            optimizer_to(optimizer, DEVICE)
 
 
     elif args.base_net:
