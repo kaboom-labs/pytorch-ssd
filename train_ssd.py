@@ -316,13 +316,13 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_dataset, args.batch_size,
                             num_workers=args.num_workers,
                             shuffle=False)
+
                             
     # create the network
     logging.info("Build network.")
     net = create_net(num_classes)
     min_loss = -10000.0
     last_epoch = -1
-
     # freeze certain layers (if requested)
     base_net_lr = args.base_net_lr if args.base_net_lr is not None else args.lr
     extra_layers_lr = args.extra_layers_lr if args.extra_layers_lr is not None else args.lr
@@ -361,39 +361,6 @@ if __name__ == '__main__':
             )}
         ]
 
-    # load a previous model checkpoint (if requested)
-    timer.start("Load Model")
-    if args.resume:
-        logging.info(f"Resume from the model {args.resume}")
-
-        combo_checkpoint = torch.load(args.resume)
-        last_epoch = checkpoint['epoch']
-        net_state_dict = checkpoint['weights']
-        optimizer_state_dict = checkpoint['optimizer']
-        if checkpoint['scheduler'] is not None:
-            scheduler = checkpoint['scheduler']
-
-        # load state dicts into model and optimizer
-        net.load_state_dict(net_state_dict)
-        optimizer.load_state_dict(optimizer_state_dict)
-
-        net = net.to(DEVICE)
-        optimizer_to(optimizer, DEVICE)
-        if args.use_cuda and torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-
-    elif args.base_net:
-        logging.info(f"Init from base net {args.base_net}")
-        net.init_from_base_net(args.base_net)
-    elif args.pretrained_ssd:
-        logging.info(f"Init from pretrained ssd {args.pretrained_ssd}")
-        net.init_from_pretrained_ssd(args.pretrained_ssd)
-    logging.info(f'Took {timer.end("Load Model"):.2f} seconds to load the model.')
-
-    # move the model to GPU
-    net.to(DEVICE)
-
     # define loss function and optimizer
     criterion = MultiboxLoss(config.priors, iou_threshold=0.5, neg_pos_ratio=3,
                              center_variance=0.1, size_variance=0.2, device=DEVICE)
@@ -405,7 +372,6 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam(params, lr=args.lr, betas=args.betas, eps=args.eps, weight_decay=args.weight_decay, amsgrad=args.amsgrad)
     if args.optim.lower() == 'sgd':
         optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, dampening=args.dampening, nesterov=args.nesterov)
-
 
     # set learning rate policy
     if args.scheduler == 'multi-step':
@@ -424,10 +390,47 @@ if __name__ == '__main__':
         parser.print_help(sys.stderr)
         sys.exit(1)
 
+    # load a previous model checkpoint (if requested)
+    timer.start("Load Model")
+    if args.resume:
+        logging.info(f"Resume from the model {args.resume}")
+
+        combo_checkpoint = torch.load(args.resume)
+        last_epoch = combo_checkpoint['epoch']
+        net_state_dict = combo_checkpoint['weights']
+        optimizer_state_dict = combo_checkpoint['optimizer']
+        if combo_checkpoint['scheduler'] is not None:
+            scheduler = combo_checkpoint['scheduler']
+
+        # load state dicts into model and optimizer
+        net.load_state_dict(net_state_dict)
+        optimizer.load_state_dict(optimizer_state_dict)
+
+        net = net.to(DEVICE)
+        optimizer_to(optimizer, DEVICE)
+        if args.use_cuda and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    elif args.base_net:
+        logging.info(f"Init from base net {args.base_net}")
+        net.init_from_base_net(args.base_net)
+    elif args.pretrained_ssd:
+        logging.info(f"Init from pretrained ssd {args.pretrained_ssd}")
+        net.init_from_pretrained_ssd(args.pretrained_ssd)
+    logging.info(f'Took {timer.end("Load Model"):.2f} seconds to load the model.')
+
+    # move the model to GPU
+    net.to(DEVICE)
+
+    # DataParallel: automatically run on multiple GPUs
+    if torch.cuda.device_count() > 1:
+        logging.info(f"Using {torch.cuda.device_count()} GPUs!")
+        net = nn.DataParallel(net)
     # train for the desired number of epochs
     logging.info(f"Start training from epoch {last_epoch + 1}.")
     
     for epoch in range(last_epoch + 1, args.num_epochs):
+        timer.start("Epoch")
         if scheduler is not None:
             scheduler.step()
         train(train_loader, net, criterion, optimizer,
@@ -454,6 +457,7 @@ if __name__ == '__main__':
                 combo_checkpoint.update({'scheduler':scheduler})
             torch.save(combo_checkpoint, model_path)
             logging.info(f"Saved combo checkpoint to {model_path}")
+            logging.info(f"Time elapsed in epoch {epoch} : {timer.end('Epoch'):.2f}")
 
     writer.flush()
     writer.close()
