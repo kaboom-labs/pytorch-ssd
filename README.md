@@ -1,22 +1,21 @@
 # SSD-based Object Detection in PyTorch
 
-## The provenance for this code is: 
-+ [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
-+ [dusty-nv/pytorch-ssd](https://github.com/dusty-nv/pytorch-ssd): Used for training backend for [dusty-nv/jetson-inference](https://github.com/dusty-nv/jetson-inference). Integrates into NVIDIA Jetson Object Detection capability. See **[Hello AI World](https://github.com/dusty-nv/jetson-inference/tree/dev#training)** tutorial: [Re-training SSD-Mobilenet](https://github.com/dusty-nv/jetson-inference/blob/dev/docs/pytorch-ssd.md)
-+ ***This repository*** [kaboom-labs/pytorch-ssd](https://github.com/kaboom-labs/pytorch-ssd): Train on COCO, Improved Training Checkpoint, 
-
-# kaboom-labs/pytorch-ssd
-
 **Get started: clone this repo with submodules**
 ```bash
 git clone --recurse-submodules git://github.com/kaboom-labs/pytorch-ssd.git
 ```
+## Table of Contents
++ A. Provenance for this code
++ B. Use COCO dataset to train Object Detection
++ C. Comprehensive Checkpoints
 
-**Table of Contents**
-+ A. Use COCO dataset to train Object Detection
-+ B. Comprehensive Checkpoints
+## A. Provenance for this code
++ [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): initial implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
++ [dusty-nv/pytorch-ssd](https://github.com/dusty-nv/pytorch-ssd): Used for training backend for [dusty-nv/jetson-inference](https://github.com/dusty-nv/jetson-inference). Integrates into NVIDIA Jetson Object Detection capability. See **[Hello AI World](https://github.com/dusty-nv/jetson-inference/tree/dev#training)** tutorial: [Re-training SSD-Mobilenet](https://github.com/dusty-nv/jetson-inference/blob/dev/docs/pytorch-ssd.md)
++ ***This repository*** [kaboom-labs/pytorch-ssd](https://github.com/kaboom-labs/pytorch-ssd): Train on COCO, Improved Training Checkpoint, 
 
-## A. Use COCO dataset to train Object Detection
+
+## B. Use COCO dataset to train Object Detection
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
@@ -69,7 +68,7 @@ python3 train_ssd.py \
 --workers 12 \ # match to CPU cores for faster performance
 ```
 
-## B. Comprehensive Checkpoints
+## C. Comprehensive Checkpoints
 
 Upstream repos saved model weights after each epoch as a `.pth` file.
 
