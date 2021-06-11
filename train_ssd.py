@@ -1,5 +1,5 @@
 #
-# train an SSD model on Pascal VOC or Open Images datasets
+# train an SSD model on Pascal VOC, Open Images, or COCO datasets
 #
 import os
 import sys
@@ -71,7 +71,7 @@ parser.add_argument('--weight-decay', default=5e-4, type=float,
                     help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float,
                     help='Gamma update for SGD')
-parser.add_argument('--base-net-lr', default=0.1, type=float,
+parser.add_argument('--base-net-lr', default=0.001, type=float,
                     help='initial learning rate for base net, or None to use --lr')
 parser.add_argument('--extra-layers-lr', default=None, type=float,
                     help='initial learning rate for the layers not in base net and prediction heads.')
