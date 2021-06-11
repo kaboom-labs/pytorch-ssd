@@ -64,3 +64,19 @@ python3 train_ssd.py \
 --epochs 100 \
 --workers 12 \ # match to CPU cores for faster performance
 ```
+
+## Comprehensive Checkpoints
+
+Upstream repos saved model weights after each epoch as a `.pth` file.
+
+However, using that one file to resume training causes sudden increase in loss.
+
+The solution is to save all: 1) model weights, 2) optimizer state_dict 3) learning rate scheduler state, and epoch number as well for convenience.
+
+To load the simple model state_dict, 
+```python3
+# first, define net
+combo_checkpoint = torch.load(path_to.pth)
+net_state_dict = combo_checkpoint['weights']
+net.load_state_dict(net_state_dict)
+```
