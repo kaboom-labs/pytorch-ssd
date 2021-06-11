@@ -75,7 +75,7 @@ The solution is to save all: 1) model weights, 2) optimizer state_dict 3) learni
 
 To load the simple model state_dict, 
 ```python3
-# first, define net
+# first, define net. then,
 combo_checkpoint = torch.load(path_to.pth)
 net_state_dict = combo_checkpoint['weights']
 net.load_state_dict(net_state_dict)
