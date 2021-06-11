@@ -399,8 +399,10 @@ if __name__ == '__main__':
         last_epoch = combo_checkpoint['epoch']
         net_state_dict = combo_checkpoint['weights']
         optimizer_state_dict = combo_checkpoint['optimizer']
-        if combo_checkpoint['scheduler'] is not None:
+        try:
             scheduler = combo_checkpoint['scheduler']
+        except KeyError:
+            scheduler = None
 
         # load state dicts into model and optimizer
         net.load_state_dict(net_state_dict)
