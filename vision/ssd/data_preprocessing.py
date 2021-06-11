@@ -31,6 +31,8 @@ class TrainAugmentation:
             boxes: bounding boxes in the form of (x1, y1, x2, y2) in pixels.
             labels: 1-d array of labels of bounding boxes.
         """
+
+        augmented = self.augment(img,boxes,labels)
         return self.augment(img, boxes, labels)
 
 

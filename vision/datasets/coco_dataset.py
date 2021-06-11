@@ -11,6 +11,7 @@ from pycocotools.coco import COCO # install from cocoapi
 import numpy as np
 import skimage.io as io
 
+
 class COCODataset:
 
     def __init__(self, root,
@@ -123,9 +124,14 @@ class COCODataset:
                 boxes.append(instance['bbox'])
                 labels += [instance['category_id']]
 
+            # convert coco annotation data format to be compatible with open_images
+            boxes = self._xywh_to_xyxy(boxes)
+
             # convert to numpy arrays
             boxes = np.array(boxes, dtype=np.float32)
             labels = np.array(labels, dtype='int64')
+
+            # convert bounding boxes from (x,y,width,height)pixels to (Xmin, Ymin, Xmax, Ymax)pixels format
 
             data.append({
                 'image_id': image_id,
@@ -136,6 +142,19 @@ class COCODataset:
         logging.warning(f'Out of {len(all_image_ids)} images, {skipped_images} have been skipped, leaving {len(all_image_ids) - skipped_images} to be used. \n\tSkipped images either have no annotation (and moved to an adjacent folder) or simply missing.')
         #import IPython; IPython.embed(); exit(1)
         return data, class_names, class_dict
+
+    def _xywh_to_xyxy(self, boxes: list) -> list:
+        '''
+        xywh: x_of_left_top_corner, y_of_left_top_corner, width, height in pixels
+        xyxy: Xmin, Ymin, Xmax, Ymax in pixels
+
+        this function takes in a list of lists
+        and returns a list of lists
+        '''
+        xyxy_boxes = []
+        for bbox in boxes:
+            xyxy_boxes.append([bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3]])
+        return xyxy_boxes
 
     def __len__(self):
         return len(self.data)

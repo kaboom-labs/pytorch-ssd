@@ -139,6 +139,11 @@ class SSD(nn.Module):
 
 
 class MatchPrior(object):
+    '''
+    'Priors' refer to default boxes.
+    SSD are pre-computed fixed size bounding boxes.
+    Priors are selected to have high IOU with ground truth.
+    '''
     def __init__(self, center_form_priors, center_variance, size_variance, iou_threshold):
         self.center_form_priors = center_form_priors
         self.corner_form_priors = box_utils.center_form_to_corner_form(center_form_priors)

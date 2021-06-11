@@ -32,6 +32,9 @@ from vision.ssd.config import mobilenetv1_ssd_config
 from vision.ssd.config import squeezenet_ssd_config
 from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
 
+#DEBUG
+from icecream import ic
+
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
 
@@ -124,6 +127,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
         labels = labels.to(device)
 
         optimizer.zero_grad()
+
         confidence, locations = net(images)
         regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
         loss = regression_loss + classification_loss
