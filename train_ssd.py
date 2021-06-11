@@ -39,14 +39,14 @@ parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
 
 # Params for datasets
-parser.add_argument("--dataset-type", default="open_images", type=str,
+parser.add_argument("--dataset-type", default="coco", type=str,
                     help='Specify dataset type. Currently supports voc,open_images, and coco.')
 parser.add_argument('--datasets', '--data', nargs='+', default=["data"], help='Dataset directory path')
 parser.add_argument('--balance-data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
 
 # Params for network
-parser.add_argument('--net', default="mb1-ssd",
+parser.add_argument('--net', default="mb2-ssd-lite",
                     help="The network architecture, it can be mb1-ssd, mb1-lite-ssd, mb2-ssd-lite or vgg16-ssd.")
 parser.add_argument('--freeze-base-net', action='store_true',
                     help="Freeze base net layers.")
@@ -59,7 +59,8 @@ parser.add_argument('--mb2-width-mult', default=1.0, type=float,
 parser.add_argument('--base-net', help='Pretrained base model')
 parser.add_argument('--pretrained-ssd', default='', type=str, help='Pre-trained base model')
 parser.add_argument('--resume', default=None, type=str,
-                    help='Checkpoint state_dict file to resume training from')
+                    help='Checkpoint state_dict files and other data to resume training from. Uses torch.load to load both net and optimizer state_dicts')
+
 
 # Params for SGD
 parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
@@ -70,7 +71,7 @@ parser.add_argument('--weight-decay', default=5e-4, type=float,
                     help='Weight decay for SGD')
 parser.add_argument('--gamma', default=0.1, type=float,
                     help='Gamma update for SGD')
-parser.add_argument('--base-net-lr', default=0.001, type=float,
+parser.add_argument('--base-net-lr', default=0.1, type=float,
                     help='initial learning rate for base net, or None to use --lr')
 parser.add_argument('--extra-layers-lr', default=None, type=float,
                     help='initial learning rate for the layers not in base net and prediction heads.')
@@ -179,6 +180,21 @@ def test(loader, net, criterion, device):
         running_classification_loss += classification_loss.item()
     return running_loss / num, running_regression_loss / num, running_classification_loss / num
 
+# helper function to move optimizer to GPU
+# https://discuss.pytorch.org/t/moving-optimizer-from-cpu-to-gpu/96068/3
+def optimizer_to(optim, device):
+    for param in optim.state.values():
+        # Not sure there are any global tensors in the state dict
+        if isinstance(param, torch.Tensor):
+            param.data = param.data.to(device)
+            if param._grad is not None:
+                param._grad.data = param._grad.data.to(device)
+        elif isinstance(param, dict):
+            for subparam in param.values():
+                if isinstance(subparam, torch.Tensor):
+                    subparam.data = subparam.data.to(device)
+                    if subparam._grad is not None:
+                        subparam._grad.data = subparam._grad.data.to(device)
 
 if __name__ == '__main__':
     timer = Timer()
@@ -332,6 +348,19 @@ if __name__ == '__main__':
     if args.resume:
         logging.info(f"Resume from the model {args.resume}")
         net.load(args.resume)
+
+        combo_checkpoint = torch.load(args.resume)
+        last_epoch = checkpoint['epoch']
+        net_state_dict = checkpoint['weights']
+        optimizer_state_dict = checkpoint['optimizer']
+        scheduler = checkpoint['scheduler']
+
+        net = net.to(DEVICE)
+        if args.use_cuda and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            optimizer_to(optimizer, DEVICE)
+
+
     elif args.base_net:
         logging.info(f"Init from base net {args.base_net}")
         net.init_from_base_net(args.base_net)
@@ -381,9 +410,18 @@ if __name__ == '__main__':
                 f"Validation Regression Loss {val_regression_loss:.4f}, " +
                 f"Validation Classification Loss: {val_classification_loss:.4f}"
             )
-            model_path = os.path.join(args.checkpoint_folder, f"{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
-            net.save(model_path)
-            logging.info(f"Saved model {model_path}")
+            model_path = os.path.join(args.checkpoint_folder, f"COMBO_CHECKPOINT_{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
+
+            # save more comprehensive checkpoint that includes optimizer and scheduler.
+            # to load just net weights (for eval), `torch.load(combo_checkpoint)['weights']`
+            combo_checkpoint = {
+                    'epoch': epoch,
+                    'weights': net.state_dict(),
+                    'optimizer':optimizer.state_dict(),
+                    'scheduler': scheduler,
+                    }
+            torch.save(combo_checkpoint, model_path)
+            logging.info(f"Saved combo checkpoint to {model_path}")
 
     writer.flush()
     writer.close()
