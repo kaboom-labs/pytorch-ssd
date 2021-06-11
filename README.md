@@ -12,7 +12,11 @@
 git clone --recurse-submodules git://github.com/kaboom-labs/pytorch-ssd.git
 ```
 
-## Use COCO dataset to train Object Detection
+**Table of Contents**
++ A. Use COCO dataset to train Object Detection
++ B. Comprehensive Checkpoints
+
+## A. Use COCO dataset to train Object Detection
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
@@ -65,7 +69,7 @@ python3 train_ssd.py \
 --workers 12 \ # match to CPU cores for faster performance
 ```
 
-## Comprehensive Checkpoints
+## B. Comprehensive Checkpoints
 
 Upstream repos saved model weights after each epoch as a `.pth` file.
 
