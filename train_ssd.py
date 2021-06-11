@@ -61,24 +61,42 @@ parser.add_argument('--pretrained-ssd', default='', type=str, help='Pre-trained 
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict files and other data to resume training from. Uses torch.load to load both net and optimizer state_dicts')
 
+# Choose optimizer & parameters shared between SGD and Adam 
+parser.add_argument('--optim', default='Adam', type=str,
+                    help='Choose optimizer from Adam, SGD')
+parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
+                    help='initial learning rate. Adam default=1e-3, SGD default=1e-3')
+parser.add_argument('--weight-decay', default=0, type=float,
+                    help='Weight decay. Adam default=0, SGD default=5e-4')
 
-# Params for SGD
-parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
-                    help='initial learning rate')
+# Exclusive params for Adam
+parser.add_argument('--betas', default=(0.9, 0.999), type=tuple,
+                    help='Coefficients used for computing running averages of gradient and its square')
+parser.add_argument('--eps', default=1e-8, type=float,
+                    help='term added to the denominator to improve numerical stability')
+parser.add_argument('--amsgrad', action='store_true',
+                    help='Whether to use AMSGrad variant of Adam')
+
+
+# Exclusive params for SGD
 parser.add_argument('--momentum', default=0.9, type=float,
                     help='Momentum value for optim')
-parser.add_argument('--weight-decay', default=5e-4, type=float,
-                    help='Weight decay for SGD')
+parser.add_argument('--dampening', default=0, type=float,
+                    help='Dampening for momentum')
+parser.add_argument('--nesterov', action='store_true',
+                    help='enables Nesterov momentum.')
+
+# Params for learning rate scheduler
 parser.add_argument('--gamma', default=0.1, type=float,
-                    help='Gamma update for SGD')
-parser.add_argument('--base-net-lr', default=0.001, type=float,
+                    help='Gamma update. Decays learning rate by this factor')
+parser.add_argument('--base-net-lr', default=None, type=float,
                     help='initial learning rate for base net, or None to use --lr')
 parser.add_argument('--extra-layers-lr', default=None, type=float,
                     help='initial learning rate for the layers not in base net and prediction heads.')
 
 # Scheduler
 parser.add_argument('--scheduler', default="cosine", type=str,
-                    help="Scheduler for SGD. It can one of multi-step and cosine")
+                    help="Learning Rate Scheduler. It can be none, multi-step, cosine")
 
 # Params for Multi-step Scheduler
 parser.add_argument('--milestones', default="80,100", type=str,
@@ -352,7 +370,8 @@ if __name__ == '__main__':
         last_epoch = checkpoint['epoch']
         net_state_dict = checkpoint['weights']
         optimizer_state_dict = checkpoint['optimizer']
-        scheduler = checkpoint['scheduler']
+        if checkpoint['scheduler'] is not None:
+            scheduler = checkpoint['scheduler']
 
         # load state dicts into model and optimizer
         net.load_state_dict(net_state_dict)
@@ -378,10 +397,15 @@ if __name__ == '__main__':
     # define loss function and optimizer
     criterion = MultiboxLoss(config.priors, iou_threshold=0.5, neg_pos_ratio=3,
                              center_variance=0.1, size_variance=0.2, device=DEVICE)
-    optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum,
-                                weight_decay=args.weight_decay)
     logging.info(f"Learning rate: {args.lr}, Base net learning rate: {base_net_lr}, "
                  + f"Extra Layers learning rate: {extra_layers_lr}.")
+
+    # select optimizer and config
+    if args.optim.lower() == 'adam':
+        optimizer = torch.optim.Adam(params, lr=args.lr, betas=args.betas, eps=args.eps, weight_decay=args.weight_decay, amsgrad=args.amsgrad)
+    if args.optim.lower() == 'sgd':
+        optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, dampening=args.dampening, nesterov=args.nesterov)
+
 
     # set learning rate policy
     if args.scheduler == 'multi-step':
@@ -392,6 +416,9 @@ if __name__ == '__main__':
     elif args.scheduler == 'cosine':
         logging.info("Uses CosineAnnealingLR scheduler.")
         scheduler = CosineAnnealingLR(optimizer, args.t_max, last_epoch=last_epoch)
+    elif args.scheduler == 'none':
+        logging.info("No learning rate scheduler specified; if using SGD, a LR scheduler is recommended.")
+        scheduler = None
     else:
         logging.fatal(f"Unsupported Scheduler: {args.scheduler}.")
         parser.print_help(sys.stderr)
@@ -401,7 +428,8 @@ if __name__ == '__main__':
     logging.info(f"Start training from epoch {last_epoch + 1}.")
     
     for epoch in range(last_epoch + 1, args.num_epochs):
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
         train(train_loader, net, criterion, optimizer,
               device=DEVICE, debug_steps=args.debug_steps, epoch=epoch)
         
@@ -421,8 +449,9 @@ if __name__ == '__main__':
                     'epoch': epoch,
                     'weights': net.state_dict(),
                     'optimizer':optimizer.state_dict(),
-                    'scheduler': scheduler,
                     }
+            if scheduler is not None: # possibility that no scheduler designated at all
+                combo_checkpoint.update({'scheduler':scheduler})
             torch.save(combo_checkpoint, model_path)
             logging.info(f"Saved combo checkpoint to {model_path}")
 
