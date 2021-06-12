@@ -56,9 +56,15 @@ make
 ```
 If it fails root access is required, you might need to install numpy and Cython on the root account with `pip install numpy Cython`
 
-### 5. All set! Train your model with COCO
+## C. Comprehensive Checkpoints 
 
-Example arguments to train_ssd.py:
+Upstream repos saved model weights after each epoch as a `.pth` file.
+
+However, using that one file to resume training causes sudden increase in loss. Also, you needed to repeat all the arguments.
+
+The solution is to save the model weights, optimizer state, learning rate scheduler state, and epoch number for each epoch, and also to have one JSON file in the checkpoint folder that contains the arguments.
+
+**To initialize training, define checkpoint folder path and other arguments**
 ```bash
 python3 train_ssd.py \
 --dataset-type=coco \
@@ -66,20 +72,23 @@ python3 train_ssd.py \
 --net mb2-ssd-lite \
 --epochs 100 \
 --workers 12 \ # match to CPU cores for faster performance
+--checkpoint-folder CHECKPOINTS_SAVED_IN_THIS_DIR
 ```
 
-## C. Comprehensive Checkpoints
-
-Upstream repos saved model weights after each epoch as a `.pth` file.
-
-However, using that one file to resume training causes sudden increase in loss.
-
-The solution is to save all: 1) model weights, 2) optimizer state_dict 3) learning rate scheduler state, and epoch number as well for convenience.
-
-To load the simple model state_dict, 
-```python3
-# first, define net. then,
-combo_checkpoint = torch.load(path_to.pth)
-net_state_dict = combo_checkpoint['weights']
-net.load_state_dict(net_state_dict)
+**To resume training without any changes, pass in checkpoint folder path to --resume**
+```bash
+python3 train_ssd.py --resume CHECKPOINTS_SAVED_IN_THIS_DIR
 ```
+
+It is possible to override any of the saved resume arguments by passing them in, but be careful.
+
+| probably override | be very careful about overriding | never override |
+| --- | --- | --- |
+| `epoch` `workers` | `datasets (needs to have same classes and preprocessing)` | all others |
+
+
+```bash
+python3 train_ssd.py \
+--resume CHECKPOINTS_SAVED_IN_THIS_DIR \
+--epochs 100 \
+--workers 8 \
