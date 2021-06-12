@@ -86,6 +86,7 @@ It is possible to override any of the saved resume arguments by passing them in,
 | --- | --- | --- |
 | `epoch` `workers` | `datasets (needs to have same classes and preprocessing)` | all others |
 
+Example of resuming training a model but with different num_epochs and num_workers
 
 ```bash
 python3 train_ssd.py \
