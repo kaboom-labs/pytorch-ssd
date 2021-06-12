@@ -147,7 +147,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     running_regression_loss = 0.0
     running_classification_loss = 0.0
 
-    for i, data in tqdm(enumerate(loader), desc=f"Training {args.net}. See http://localhost:6006/", total=len(loader), leave=True):
+    for i, data in tqdm(enumerate(loader), desc=f"Tensorboard @ http://localhost:6006/ | Batch", total=len(loader), leave=True):
         images, boxes, labels = data
         images = images.to(device)
         boxes = boxes.to(device)
@@ -174,12 +174,12 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
             prev_clf_loss = avg_clf_loss
 
             #logging.info(
-            #    f"Epoch: {epoch}, Step: {i}/{len(loader)}, " +
+            #    f"Epoch: {epoch}/{args.num_epochs}, Step: {i}/{len(loader)}, " +
             #    f"Avg Loss: {avg_loss:.4f}, " +
             #    f"Avg Regression Loss {avg_reg_loss:.4f}, " +
             #    f"Avg Classification Loss: {avg_clf_loss:.4f}" +
             #)
-            tqdm.write(f"Epoch: {epoch}\t Avg Loss: {avg_loss:.3f}\t Avg Regression Loss: {avg_reg_loss:.3f}\t Avg Classification Loss: {avg_clf_loss:.3f}")
+            tqdm.write(f"Epoch: {epoch}/{args.num_epochs}\t Avg Loss: {avg_loss:.3f}\t Avg Regression Loss: {avg_reg_loss:.3f}\t Avg Classification Loss: {avg_clf_loss:.3f}")
 
             writer.add_scalar("Average Loss", avg_loss, sub_epoch)
             writer.add_scalar("Average Regression Loss", avg_reg_loss, sub_epoch)
@@ -508,7 +508,7 @@ if __name__ == '__main__':
     # train for the desired number of epochs
     logging.info(f"Start training from epoch {last_epoch + 1}.")
     
-    for epoch in range(last_epoch + 1, args.num_epochs):
+    for epoch in tqdm(range(last_epoch + 1, args.num_epochs), desc=f"Training {args.net} on {args.datasets[0][:9]}   | Epoch", total=args.num_epochs, leave=True):
         timer.start("Epoch")
         if scheduler is not None:
             scheduler.step()
