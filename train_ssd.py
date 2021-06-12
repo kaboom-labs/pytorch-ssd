@@ -7,6 +7,8 @@ import logging
 import argparse
 import itertools
 import torch
+from collections import OrderedDict
+import json
 
 import time
 import math
@@ -62,7 +64,7 @@ parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict files and other data to resume training from. Uses torch.load to load both net and optimizer state_dicts')
 
 # Choose optimizer & parameters shared between SGD and Adam 
-parser.add_argument('--optim', default='Adam', type=str,
+parser.add_argument('--optim-choose', default='Adam', type=str,
                     help='Choose optimizer from Adam, SGD')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
                     help='initial learning rate. Adam default=1e-3, SGD default=1e-3')
@@ -218,7 +220,6 @@ if __name__ == '__main__':
     timer = Timer()
 
     logging.info(args)
-    
     # make sure that the checkpoint output dir exists
     if args.checkpoint_folder:
         args.checkpoint_folder = os.path.expanduser(args.checkpoint_folder)
@@ -226,6 +227,28 @@ if __name__ == '__main__':
         if not os.path.exists(args.checkpoint_folder):
             os.mkdir(args.checkpoint_folder)
             
+    # if requested, load arguments from JSON file in `args.checkpoint_folder`
+    if args.resume:
+        training_args_path = os.path.join(os.path.abspath(args.checkpoint_folder), 'training_args.json')
+
+        with open(training_args_path, 'r') as j:
+            training_args = json.load(j)
+
+        args.dataset_type = training_args['dataset_type']
+        args.datasets = training_args['datasets']
+        args.balance_data= training_args['balance_data']
+        args.net= training_args['net']
+        args.freeze_base_net = training_args['freeze_base_net']
+        args.freeze_net = training_args['freeze_net']
+        args.mb2_width_mult = training_args['mb2_width_mult']
+        args.optim = training_args['optim']
+        args.batch_size = training_args['batch_size']
+        args.num_epochs = training_args['num_epochs']
+        args.num_workers = training_args['num_workers']
+        args.debug_steps = training_args['debug_steps']
+        args.use_cuda = training_args['use_cuda']
+        args.checkpoint_folder = training_args['checkpoint_folder']
+
     # select the network architecture and config     
     if args.net == 'vgg16-ssd':
         create_net = create_vgg_ssd
@@ -320,7 +343,7 @@ if __name__ == '__main__':
                             
     # create the network
     logging.info("Build network.")
-    net = create_net(num_classes)
+    net = create_net(num_classes) # even if just one GPU, wrap in nn.DataParallel so that it can use checkpoints from multi-gpu trainings
     min_loss = -10000.0
     last_epoch = -1
     # freeze certain layers (if requested)
@@ -368,9 +391,9 @@ if __name__ == '__main__':
                  + f"Extra Layers learning rate: {extra_layers_lr}.")
 
     # select optimizer and config
-    if args.optim.lower() == 'adam':
+    if args.optim_choose.lower() == 'adam':
         optimizer = torch.optim.Adam(params, lr=args.lr, betas=args.betas, eps=args.eps, weight_decay=args.weight_decay, amsgrad=args.amsgrad)
-    if args.optim.lower() == 'sgd':
+    if args.optim_choose.lower() == 'sgd':
         optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, dampening=args.dampening, nesterov=args.nesterov)
 
     # set learning rate policy
@@ -404,6 +427,15 @@ if __name__ == '__main__':
         except KeyError:
             scheduler = None
 
+        # Remove 'module' entries in model state_dict if single GPU
+        # fixes https://discuss.pytorch.org/t/solved-keyerror-unexpected-key-module-encoder-embedding-weight-in-state-dict/1686/3
+        if torch.cuda.device_count() <= 1:
+            single_gpu_net_state_dict = OrderedDict()
+            for k,v in net_state_dict.items():
+                name = k[7:] # remove 'module.'  from DataParallel
+                single_gpu_net_state_dict[name] = v
+            net_state_dict = single_gpu_net_state_dict
+
         # load state dicts into model and optimizer
         net.load_state_dict(net_state_dict)
         optimizer.load_state_dict(optimizer_state_dict)
@@ -425,9 +457,34 @@ if __name__ == '__main__':
     net.to(DEVICE)
 
     # DataParallel: automatically run on multiple GPUs
+    logging.info(f"Using {torch.cuda.device_count()} GPUs!")
     if torch.cuda.device_count() > 1:
-        logging.info(f"Using {torch.cuda.device_count()} GPUs!")
-        net = nn.DataParallel(net)
+        net = torch.nn.DataParallel(net)
+
+    # save training parameters to model directory
+    # enables resuming training without having to copy all the arguments
+    training_args = {} # save all training args that are required to continue training on same dataset; can be overriden at resume if need be.
+    # 'initial values' for optimizers, etc are not included because they are saved as part of state_dict
+    training_args.update({'dataset_type': args.dataset_type})
+    training_args.update({'datasets': args.datasets})
+    training_args.update({'balance-data': args.balance_data})
+    training_args.update({'net': args.net})
+    training_args.update({'freeze_base_net': args.freeze_base_net})
+    training_args.update({'freeze_net': args.freeze_net})
+    training_args.update({'mb2_width_mult': args.mb2_width_mult})
+    training_args.update({'optim': args.optim})
+    training_args.update({'batch_size': args.batch_size})
+    training_args.update({'num_epochs': args.num_epochs})
+    training_args.update({'num_workers': args.num_workers})
+    training_args.update({'debug_steps': args.debug_steps})
+    training_args.update({'use_cuda': args.use_cuda})
+    training_args.update({'checkpoint_folder': args.checkpoint_folder})
+
+    training_args_path = os.path.join(os.path.abspath(args.checkpoint_folder), 'training_args.json')
+
+    with open(training_args_path, 'w') as j:
+        json.dump(training_args, j)
+
     # train for the desired number of epochs
     logging.info(f"Start training from epoch {last_epoch + 1}.")
     
