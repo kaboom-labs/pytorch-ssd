@@ -447,15 +447,15 @@ if __name__ == '__main__':
         # Remove 'module' entries in model state_dict if single GPU
         # fixes https://discuss.pytorch.org/t/solved-keyerror-unexpected-key-module-encoder-embedding-weight-in-state-dict/1686/3
         if torch.cuda.device_count() <= 1:
-            single_gpu_net_state_dict = OrderedDict()
+            new_net_state_dict = OrderedDict()
             for k,v in net_state_dict.items():
-                if k[7:] == 'module.':
+                if k[:7] == 'module.':
                     name = k[7:] # remove 'module.'  from DataParallel
                 else:
                     name = k
-                single_gpu_net_state_dict[name] = v
-            net_state_dict = single_gpu_net_state_dict
-
+                new_net_state_dict[name] = v
+            net_state_dict = new_net_state_dict
+            #import IPython; IPython.embed() ; exit(1)
         # load state dicts into model and optimizer
         net.load_state_dict(net_state_dict)
         optimizer.load_state_dict(optimizer_state_dict)
