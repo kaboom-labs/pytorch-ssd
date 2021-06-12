@@ -125,6 +125,10 @@ parser.add_argument('--use-cuda', default=True, type=str2bool,
 parser.add_argument('--checkpoint-folder', '--model-dir', default='models/',
                     help='Directory for saving checkpoint models')
 
+# Tensorboard integration
+parser.add_argument('--tensorboard', action='store_true',
+                    help='Visualize training in tensoboard')
+
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
                     
@@ -143,7 +147,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     running_regression_loss = 0.0
     running_classification_loss = 0.0
 
-    for i, data in tqdm(enumerate(loader), desc=f"Training {args.net} on {args.datasets}", total=len(loader), leave=True):
+    for i, data in tqdm(enumerate(loader), desc=f"Training {args.net}. See http://localhost:6006/", total=len(loader), leave=True):
         images, boxes, labels = data
         images = images.to(device)
         boxes = boxes.to(device)
@@ -228,6 +232,9 @@ def optimizer_to(optim, device):
 if __name__ == '__main__':
     timer = Timer()
 
+    # start tensorboard
+    os.system('tensorboard --logdir runs &')
+
     logging.info(args)
     # make sure that the checkpoint output dir exists
     if args.checkpoint_folder:
@@ -256,6 +263,7 @@ if __name__ == '__main__':
         args.debug_steps = training_args['debug_steps']
         args.use_cuda = training_args['use_cuda']
         args.checkpoint_folder = training_args['checkpoint_folder']
+        args.tensorboard = training_args['tensorboard']
 
     # select the network architecture and config     
     if args.net == 'vgg16-ssd':
@@ -490,6 +498,7 @@ if __name__ == '__main__':
     training_args.update({'debug_steps': args.debug_steps})
     training_args.update({'use_cuda': args.use_cuda})
     training_args.update({'checkpoint_folder': args.checkpoint_folder})
+    training_args.update({'tensorboard' : args.tensorboard})
 
     training_args_path = os.path.join(os.path.abspath(args.checkpoint_folder), 'training_args.json')
 
