@@ -69,12 +69,12 @@ python3 train_ssd.py \
 --net mb2-ssd-lite \
 --epochs 100 \
 --workers 12 \ # match to CPU cores for faster performance
---checkpoint-folder CHECKPOINTS_SAVED_IN_THIS_DIR
+--checkpoint-folder models/my-experiment-1
 ```
 
 **To resume training without any changes, pass in checkpoint folder path to --resume**
 ```bash
-python3 train_ssd.py --resume CHECKPOINTS_SAVED_IN_THIS_DIR
+python3 train_ssd.py --resume models/my-experiment-1
 ```
 
 It is possible to override any of the saved resume arguments by passing them in, but be careful.
@@ -87,6 +87,6 @@ Example of resuming training a model but with different num_epochs and num_worke
 
 ```bash
 python3 train_ssd.py \
---resume CHECKPOINTS_SAVED_IN_THIS_DIR \
+--resume models/my-experiment-1 \
 --epochs 100 \
 --workers 8 \
