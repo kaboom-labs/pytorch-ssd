@@ -36,7 +36,7 @@ from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
 
 #DEBUG
 from icecream import ic
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
@@ -235,7 +235,6 @@ if __name__ == '__main__':
     # start tensorboard
     os.system('tensorboard --logdir runs &')
 
-    logging.info(args)
     # make sure that the checkpoint output dir exists
     if args.checkpoint_folder:
         args.checkpoint_folder = os.path.expanduser(args.checkpoint_folder)
@@ -264,6 +263,8 @@ if __name__ == '__main__':
         args.use_cuda = training_args['use_cuda']
         args.checkpoint_folder = training_args['checkpoint_folder']
         args.tensorboard = training_args['tensorboard']
+
+    logging.info(args)
 
     # select the network architecture and config     
     if args.net == 'vgg16-ssd':
@@ -508,7 +509,7 @@ if __name__ == '__main__':
     # train for the desired number of epochs
     logging.info(f"Start training from epoch {last_epoch + 1}.")
     
-    for epoch in tqdm(range(last_epoch + 1, args.num_epochs), desc=f"Training {args.net} on {args.datasets[0][:9]}   | Epoch", total=args.num_epochs, leave=True):
+    for epoch in trange(last_epoch + 1, args.num_epochs, initial=last_epoch+1, desc=f"Training {args.net} on {args.datasets[0][:9]}   | Epoch", total=args.num_epochs, leave=True):
         timer.start("Epoch")
         if scheduler is not None:
             scheduler.step()
