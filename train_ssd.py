@@ -36,6 +36,7 @@ from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
 
 #DEBUG
 from icecream import ic
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
@@ -141,7 +142,8 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     running_loss = 0.0
     running_regression_loss = 0.0
     running_classification_loss = 0.0
-    for i, data in enumerate(loader):
+
+    for i, data in tqdm(enumerate(loader), desc=f"Training {args.net} on {args.datasets}", total=len(loader), leave=True):
         images, boxes, labels = data
         images = images.to(device)
         boxes = boxes.to(device)
@@ -162,12 +164,19 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
             avg_loss = running_loss / debug_steps
             avg_reg_loss = running_regression_loss / debug_steps
             avg_clf_loss = running_classification_loss / debug_steps
-            logging.info(
-                f"Epoch: {epoch}, Step: {i}/{len(loader)}, " +
-                f"Avg Loss: {avg_loss:.4f}, " +
-                f"Avg Regression Loss {avg_reg_loss:.4f}, " +
-                f"Avg Classification Loss: {avg_clf_loss:.4f}"
-            )
+
+            prev_loss = avg_loss
+            prev_reg_loss = avg_reg_loss
+            prev_clf_loss = avg_clf_loss
+
+            #logging.info(
+            #    f"Epoch: {epoch}, Step: {i}/{len(loader)}, " +
+            #    f"Avg Loss: {avg_loss:.4f}, " +
+            #    f"Avg Regression Loss {avg_reg_loss:.4f}, " +
+            #    f"Avg Classification Loss: {avg_clf_loss:.4f}" +
+            #)
+            tqdm.write(f"Epoch: {epoch}\t Avg Loss: {avg_loss:.3f}\t Avg Regression Loss: {avg_reg_loss:.3f}\t Avg Classification Loss: {avg_clf_loss:.3f}")
+
             writer.add_scalar("Average Loss", avg_loss, sub_epoch)
             writer.add_scalar("Average Regression Loss", avg_reg_loss, sub_epoch)
             writer.add_scalar("Average Classification Loss", avg_clf_loss, sub_epoch)
@@ -227,21 +236,20 @@ if __name__ == '__main__':
         if not os.path.exists(args.checkpoint_folder):
             os.mkdir(args.checkpoint_folder)
             
-    # if requested, load arguments from JSON file in `args.checkpoint_folder`
+    # if requested, load arguments from JSON file in parent folder of checkpoint 
     if args.resume:
-        training_args_path = os.path.join(os.path.abspath(args.checkpoint_folder), 'training_args.json')
+        training_args_path = os.path.join(os.path.split(os.path.abspath(args.resume))[0], 'training_args.json')
 
         with open(training_args_path, 'r') as j:
             training_args = json.load(j)
 
         args.dataset_type = training_args['dataset_type']
         args.datasets = training_args['datasets']
-        args.balance_data= training_args['balance_data']
         args.net= training_args['net']
         args.freeze_base_net = training_args['freeze_base_net']
         args.freeze_net = training_args['freeze_net']
         args.mb2_width_mult = training_args['mb2_width_mult']
-        args.optim = training_args['optim']
+        args.optim_choose = training_args['optim_choose']
         args.batch_size = training_args['batch_size']
         args.num_epochs = training_args['num_epochs']
         args.num_workers = training_args['num_workers']
@@ -432,7 +440,10 @@ if __name__ == '__main__':
         if torch.cuda.device_count() <= 1:
             single_gpu_net_state_dict = OrderedDict()
             for k,v in net_state_dict.items():
-                name = k[7:] # remove 'module.'  from DataParallel
+                if k[7:] == 'module.':
+                    name = k[7:] # remove 'module.'  from DataParallel
+                else:
+                    name = k
                 single_gpu_net_state_dict[name] = v
             net_state_dict = single_gpu_net_state_dict
 
@@ -472,7 +483,7 @@ if __name__ == '__main__':
     training_args.update({'freeze_base_net': args.freeze_base_net})
     training_args.update({'freeze_net': args.freeze_net})
     training_args.update({'mb2_width_mult': args.mb2_width_mult})
-    training_args.update({'optim': args.optim})
+    training_args.update({'optim_choose': args.optim_choose})
     training_args.update({'batch_size': args.batch_size})
     training_args.update({'num_epochs': args.num_epochs})
     training_args.update({'num_workers': args.num_workers})
