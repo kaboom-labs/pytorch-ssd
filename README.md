@@ -14,6 +14,7 @@ pip install -r requirements.txt
 + A. Provenance for this code
 + B. Use COCO dataset to train Object Detection
 + C. Comprehensive Checkpoints and Exact Resume
++ D. Multi-GPU Training
 
 ## A. Provenance for this code
 + [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): initial implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
@@ -69,12 +70,12 @@ python3 train_ssd.py \
 --net mb2-ssd-lite \
 --epochs 100 \
 --workers 12 \ # match to CPU cores for faster performance
---checkpoint-folder CHECKPOINTS_SAVED_IN_THIS_DIR
+--checkpoint-folder models/my-experiment-1
 ```
 
 **To resume training without any changes, pass in checkpoint folder path to --resume**
 ```bash
-python3 train_ssd.py --resume CHECKPOINTS_SAVED_IN_THIS_DIR
+python3 train_ssd.py --resume models/my-experiment-1
 ```
 
 It is possible to override any of the saved resume arguments by passing them in, but be careful.
@@ -87,6 +88,11 @@ Example of resuming training a model but with different num_epochs and num_worke
 
 ```bash
 python3 train_ssd.py \
---resume CHECKPOINTS_SAVED_IN_THIS_DIR \
+--resume models/my-experiment-1 \
 --epochs 100 \
 --workers 8 \
+```
+
+## D. Multi-GPU Training
+
+With `kaboom-labs/pytorch-ssd/train_ssd.py`, you can freely go between single GPU and multi GPU training environments without making any changes. 
