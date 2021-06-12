@@ -4,6 +4,12 @@
 ```bash
 git clone --recurse-submodules git://github.com/kaboom-labs/pytorch-ssd.git
 ```
+**install required python packages**
+```bash
+cd pytorch-ssd
+pip install -r requirements.txt
+```
+
 ## Table of Contents
 + A. Provenance for this code
 + B. Use COCO dataset to train Object Detection
@@ -47,22 +53,13 @@ The script `fix_coco_annotations.py` addresses this problem by re-assigning zero
 python3 fix_coco_annotations.py --path coco-data
 ```
 
-### 4. Install `pycocotools`
-
-Navigate to cocoapi/PythonAPI and make
-```bash
-cd cocoapi/PythonAPI
-make
-```
-If it fails root access is required, you might need to install numpy and Cython on the root account with `pip install numpy Cython`
-
 ## C. Comprehensive Checkpoints 
 
-Upstream repos saved model weights after each epoch as a `.pth` file.
+Upstream repos save model weights after each epoch as a `.pth` file.
 
 However, using that one file to resume training causes sudden increase in loss. Also, you needed to repeat all the arguments.
 
-The solution is to save the model weights, optimizer state, learning rate scheduler state, and epoch number for each epoch, and also to have one JSON file in the checkpoint folder that contains the arguments.
+The solution is to save the model weights, optimizer state, learning rate scheduler state, and epoch number for each epoch, and also to have one JSON file in the checkpoint folder that contains the arguments. This repo implements this.
 
 **To initialize training, define checkpoint folder path and other arguments**
 ```bash
