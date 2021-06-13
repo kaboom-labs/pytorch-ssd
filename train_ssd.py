@@ -44,7 +44,7 @@ parser = argparse.ArgumentParser(
 # Params for datasets
 parser.add_argument("--dataset-type", default="coco", type=str,
                     help='Specify dataset type. Currently supports voc,open_images, and coco.')
-parser.add_argument('--datasets', '--data', nargs='+', default=["data"], help='Dataset directory path')
+parser.add_argument('--datasets', '--data', nargs='+', default=["coco-data"], help='Dataset directory path')
 parser.add_argument('--balance-data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
 
@@ -98,7 +98,7 @@ parser.add_argument('--extra-layers-lr', default=None, type=float,
                     help='initial learning rate for the layers not in base net and prediction heads.')
 
 # Scheduler
-parser.add_argument('--scheduler', default="cosine", type=str,
+parser.add_argument('--scheduler', default="none", type=str,
                     help="Learning Rate Scheduler. It can be none, multi-step, cosine")
 
 # Params for Multi-step Scheduler
@@ -110,11 +110,11 @@ parser.add_argument('--t-max', default=100, type=float,
                     help='T_max value for Cosine Annealing Scheduler.')
 
 # Train params
-parser.add_argument('--batch-size', default=4, type=int,
+parser.add_argument('--batch-size', default=2, type=int,
                     help='Batch size for training')
 parser.add_argument('--num-epochs', '--epochs', default=30, type=int,
                     help='the number epochs')
-parser.add_argument('--num-workers', '--workers', default=2, type=int,
+parser.add_argument('--num-workers', '--workers', default=6, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--validation-epochs', default=1, type=int,
                     help='the number epochs between running validation')

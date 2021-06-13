@@ -1,0 +1,1 @@
+{"dataset_type": "coco", "datasets": ["coco-data"], "balance-data": false, "net": "mb2-ssd-lite", "freeze_base_net": false, "freeze_net": false, "mb2_width_mult": 1.0, "optim_choose": "Adam", "batch_size": 2, "num_epochs": 30, "num_workers": 6, "debug_steps": 10, "use_cuda": true, "checkpoint_folder": "adam-1e-2", "tensorboard": false}
