@@ -100,10 +100,11 @@ def convert_locations_to_boxes(locations, priors, center_variance,
     # priors can have one dimension less.
     if priors.dim() + 1 == locations.dim():
         priors = priors.unsqueeze(0)
-    return torch.cat([
+    boxes = torch.cat([
         locations[..., :2] * center_variance * priors[..., 2:] + priors[..., :2],
         torch.exp(locations[..., 2:] * size_variance) * priors[..., 2:]
     ], dim=locations.dim() - 1)
+    return boxes
 
 
 def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_variance, size_variance):

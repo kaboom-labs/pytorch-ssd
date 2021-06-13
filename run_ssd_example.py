@@ -6,9 +6,9 @@ from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite, create
 from vision.utils.misc import Timer
 import cv2
 import sys
+import torch
 
-from icecream import ic 
-
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 
 if len(sys.argv) < 5:
     print('Usage: python run_ssd_example.py <net type>  <model path> <label path> <image path>')
@@ -33,7 +33,11 @@ elif net_type == 'sq-ssd-lite':
 else:
     print("The net type is wrong. It should be one of vgg16-ssd, mb1-ssd and mb1-ssd-lite.")
     sys.exit(1)
-net.load(model_path)
+
+combo_checkpoint = torch.load(model_path)
+net_state_dict = combo_checkpoint['weights']
+net.load_state_dict(net_state_dict)
+net = net.to(DEVICE)
 
 if net_type == 'vgg16-ssd':
     predictor = create_vgg_ssd_predictor(net, candidate_size=200)
@@ -56,12 +60,12 @@ for i in range(boxes.size(0)):
     box = boxes[i, :]
 
     box = box.numpy()
-    ic(orig_image.shape)
-    ic(type(orig_image))
-    ic(box[0])
-    ic(box[1])
-    ic(box[2])
-    ic(box[3])
+    #ic(orig_image.shape)
+    #ic(type(orig_image))
+    #ic(box[0])
+    #ic(box[1])
+    #ic(box[2])
+    #ic(box[3])
     
     cv2.rectangle(orig_image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 255, 0), 4)
     # OpenCV needs python int, not numpy int. Manual casting fixes https://github.com/opencv/opencv/issues/15465

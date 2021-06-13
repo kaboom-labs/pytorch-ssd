@@ -86,7 +86,10 @@ class SSD(nn.Module):
 
         confidences = torch.cat(confidences, 1)
         locations = torch.cat(locations, 1)
-        
+
+        # fix tensors not in same device RuntimeError
+        locations = locations.to(self.device)
+
         if self.is_test:
             confidences = F.softmax(confidences, dim=2)
             boxes = box_utils.convert_locations_to_boxes(
