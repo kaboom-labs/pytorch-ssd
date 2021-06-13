@@ -176,11 +176,14 @@ class COCODataset:
 
     def _read_image(self, image_id):
         image_file = os.path.join(self.root, self.dataset_type + '2017', self.id_to_filename[image_id])
+        # loading with opencv
         image = cv2.imread(str(image_file))
         if image.shape[2] == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         else:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+
         return image
 
     def _balance_data(self):
