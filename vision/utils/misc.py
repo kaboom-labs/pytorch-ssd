@@ -43,3 +43,24 @@ def freeze_net_layers(net):
 def store_labels(path, labels):
     with open(path, "w") as f:
         f.write("\n".join(labels))
+
+def xyxy_to_xywh(xyxy):
+    '''
+    convert bounding boxes from
+    x_min,y_min,x_max,y_max (pixels) [open_images / SSD]
+    to
+    x_left_top, y_left_top, width, height (pixels) [ COCO ]
+    '''
+    return [xyxy[0], xyxy[1], xyxy[2]-xyxy[0], xyxy[3]-xyxy[1]]
+
+
+def xywh_to_xyxy(xywh: list) -> list:
+    '''
+    Convert bounding boxes from
+    x_left_top, y_left_top, width, height (pixels)
+    to
+    x_min, y_min, x_max, y_max
+    '''
+    return [xywh[0], xywh[1], xywh[0]+xywh[2], xywh[1]+xywh[3]]
+
+

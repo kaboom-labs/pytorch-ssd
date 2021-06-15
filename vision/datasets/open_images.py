@@ -45,6 +45,7 @@ class OpenImagesDataset:
             image, boxes, labels = self.transform(image, boxes, labels)
         if self.target_transform:
             boxes, labels = self.target_transform(boxes, labels)
+        import IPython; IPython.embed()
         return image_info['image_id'], image, boxes, labels
 
     def __getitem__(self, index):

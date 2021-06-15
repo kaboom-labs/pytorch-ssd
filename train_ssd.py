@@ -164,6 +164,10 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
         running_loss += loss.item()
         running_regression_loss += regression_loss.item()
         running_classification_loss += classification_loss.item()
+
+        tqdm.write(
+                f"Epoch: {epoch}/{args.num_epochs}\t Loss: {str(loss.item())[:5]}\t Regression Loss: {str(regression_loss.item())[:5]}\t Classification Loss: {str(classification_loss.item())[:5]}")
+
         if i and i % debug_steps == 0:
             avg_loss = running_loss / debug_steps
             avg_reg_loss = running_regression_loss / debug_steps
@@ -179,7 +183,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
             #    f"Avg Regression Loss {avg_reg_loss:.4f}, " +
             #    f"Avg Classification Loss: {avg_clf_loss:.4f}" +
             #)
-            tqdm.write(f"Epoch: {epoch}/{args.num_epochs}\t Avg Loss: {avg_loss:.3f}\t Avg Regression Loss: {avg_reg_loss:.3f}\t Avg Classification Loss: {avg_clf_loss:.3f}")
+            #tqdm.write(f"Epoch: {epoch}/{args.num_epochs}\t Avg Loss: {avg_loss:.3f}\t Avg Regression Loss: {avg_reg_loss:.3f}\t Avg Classification Loss: {avg_clf_loss:.3f}")
 
             writer.add_scalar("Average Loss", avg_loss, sub_epoch)
             writer.add_scalar("Average Regression Loss", avg_reg_loss, sub_epoch)

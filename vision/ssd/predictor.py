@@ -1,4 +1,5 @@
 import torch
+from tqdm import tqdm
 
 from ..utils import box_utils
 from .data_preprocessing import PredictionTransform
@@ -33,10 +34,11 @@ class Predictor:
         #print(image)
         images = image.unsqueeze(0)
         images = images.to(self.device)
+        #self.timer.start()
         with torch.no_grad():
-            self.timer.start()
             scores, boxes = self.net.forward(images)
-            print("Inference time: ", self.timer.end())
+            #print("Inference time: ", self.timer.end())
+            #tqdm.write(f"Inference time: {self.timer.end()}")
         boxes = boxes[0]
         scores = scores[0]
         if not prob_threshold:

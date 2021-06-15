@@ -52,6 +52,7 @@ if __name__=="__main__":
     "test2017.zip":"http://images.cocodataset.org/zips/test2017.zip", # test images 
     "val2017.zip":"http://images.cocodataset.org/zips/val2017.zip", # validation images
     "annotations_trainval2017.zip":"http://images.cocodataset.org/annotations/annotations_trainval2017.zip", #annotation information
+    "image_info_test2017.zip":"http://images.cocodataset.org/annotations/image_info_test2017.zip" # test image information
     }
     root = os.path.abspath(args.root)
 

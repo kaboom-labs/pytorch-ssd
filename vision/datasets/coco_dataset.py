@@ -6,11 +6,10 @@ import copy
 import os
 import logging
 
+from ..utils.misc import xywh_to_xyxy
+
 # COCO Dataset 
 from pycocotools.coco import COCO # install from cocoapi
-import numpy as np
-import skimage.io as io
-
 
 class COCODataset:
 
@@ -85,9 +84,8 @@ class COCODataset:
         # get COCO categories
         cats = self.coco.loadCats(self.coco.getCatIds())
         pure_class_names = [cat['name'] for cat in cats]
-        class_names = pure_class_names + ['BACKGROUND'] # empty category- not sure why it exists but just copying open images dataset
-        class_dict = {class_name : i+1 for i,class_name in enumerate(pure_class_names)}
-        class_dict.update({'BACKGROUND':0})
+        class_names = ['BACKGROUND'] + pure_class_names # in index 0 of this list, 'BACKGROUND' is an empty category. It is used internally by SSD as the label for prior bboxes that aren't associated with any object
+        class_dict = {class_name : i for i,class_name in enumerate(class_names)}
 
         # filling out data list
         all_image_ids = self.coco.getImgIds() 
@@ -140,7 +138,7 @@ class COCODataset:
                 })
 
         logging.warning(f'Out of {len(all_image_ids)} images, {skipped_images} have been skipped, leaving {len(all_image_ids) - skipped_images} to be used. \n\tSkipped images either have no annotation (and moved to an adjacent folder) or simply missing.')
-        #import IPython; IPython.embed(); exit(1)
+        #import IPython; IPython.embed()
         return data, class_names, class_dict
 
     def _xywh_to_xyxy(self, boxes: list) -> list:
@@ -153,7 +151,7 @@ class COCODataset:
         '''
         xyxy_boxes = []
         for bbox in boxes:
-            xyxy_boxes.append([bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3]])
+            xyxy_boxes.append(xywh_to_xyxy(bbox))
         return xyxy_boxes
 
     def __len__(self):
@@ -185,24 +183,3 @@ class COCODataset:
 
 
         return image
-
-    def _balance_data(self):
-        logging.info('balancing data')
-        label_image_indexes = [set() for _ in range(len(self.class_names))]
-        for i, image in enumerate(self.data):
-            for label_id in image['labels']:
-                label_image_indexes[label_id].add(i)
-        label_stat = [len(s) for s in label_image_indexes]
-        self.min_image_num = min(label_stat[1:])
-        sample_image_indexes = set()
-        for image_indexes in label_image_indexes[1:]:
-            image_indexes = np.array(list(image_indexes))
-            sub = np.random.permutation(image_indexes)[:self.min_image_num]
-            sample_image_indexes.update(sub)
-        sample_data = [self.data[i] for i in sample_image_indexes]
-        return sample_data
-
-
-
-
-

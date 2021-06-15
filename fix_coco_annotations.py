@@ -27,7 +27,7 @@ def fix_category_id(coco_dict: dict):
     
     # build dictionary that correlates 91-class annotations to zero-indexed 80-class annotations
     cat_convert = {}
-    i = 0
+    i = 1
     for cat in coco_categories_dict:
         if cat['id'] == i:
             logging.error("Idempotency Warning: It looks like you have already run this script. Do not run this script more than once.")
