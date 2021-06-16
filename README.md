@@ -36,7 +36,7 @@ will download the 2017 image object detection zip files to 'coco-data' folder an
 ```bash
 python3 validate_image_files.py --path coco-data/train2017
 python3 validate_image_files.py --path coco-data/test2017
-python3 validate_image_fiels.py --path coco-data/val2017
+python3 validate_image_files.py --path coco-data/val2017
 ```
 This will read the files using scikit-image and filter out any that are corrupt or otherwise unreadable.
 Checking for corrupt images is a good idea before feeding them into PyTorch.
