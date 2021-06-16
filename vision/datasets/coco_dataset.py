@@ -138,7 +138,6 @@ class COCODataset:
                 })
 
         logging.warning(f'Out of {len(all_image_ids)} images, {skipped_images} have been skipped, leaving {len(all_image_ids) - skipped_images} to be used. \n\tSkipped images either have no annotation (and moved to an adjacent folder) or simply missing.')
-        #import IPython; IPython.embed()
         return data, class_names, class_dict
 
     def _xywh_to_xyxy(self, boxes: list) -> list:
@@ -159,7 +158,7 @@ class COCODataset:
 
     def __repr__(self):
         if self.class_stat is None:
-            self.class_stat = {name: 0 for name in self.class_names[:-1]}
+            self.class_stat = {name: 0 for name in self.class_names[:]}
             for example in self.data:
                 for class_index in example['labels']:
                     class_name = self.class_names[class_index]

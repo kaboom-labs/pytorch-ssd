@@ -25,13 +25,17 @@ def fix_category_id(coco_dict: dict):
     coco_categories_dict = coco_dict['categories']
     coco_annotations_dict = coco_dict['annotations']
     
-    # build dictionary that correlates 91-class annotations to zero-indexed 80-class annotations
+    # build dictionary that correlates 91-class annotations to one-indexed 80-class annotations
     cat_convert = {}
+    
+    # exit if dictionary appears to have been modified already
+    if coco_categories_dict[-1]['id'] != 90:
+        logging.error("Idempotency Warning: It looks like you have already run this script. Do not run this script more than once.")
+        sys.exit(1)
+        
     i = 1
     for cat in coco_categories_dict:
-        if cat['id'] == i:
-            logging.error("Idempotency Warning: It looks like you have already run this script. Do not run this script more than once.")
-            sys.exit(1)
+
         cat_convert.update({cat['id']: i}) # create simpler dictionary for later use
         cat.update({'id':i}) # rename the dictionary itself too
         i += 1
@@ -78,7 +82,7 @@ def move_empty_images(coco_dict: dict, coco_root: str, dataset_type: str):
         from_image_path = os.path.join(coco_root, f"{dataset_type}2017", image_filename)
         shutil.move(from_image_path, rejects_dir)
         counter += 1
-    logging.warning(f"{counter} images have been moved out of {from_image_path}.")
+    logging.info(f"{counter} images have been moved out of {from_image_path}.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description= "Fix COCO label indexes")

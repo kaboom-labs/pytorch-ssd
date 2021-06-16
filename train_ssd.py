@@ -459,7 +459,6 @@ if __name__ == '__main__':
                     name = k
                 new_net_state_dict[name] = v
             net_state_dict = new_net_state_dict
-            #import IPython; IPython.embed() ; exit(1)
         # load state dicts into model and optimizer
         net.load_state_dict(net_state_dict)
         optimizer.load_state_dict(optimizer_state_dict)

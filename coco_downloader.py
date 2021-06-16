@@ -44,6 +44,7 @@ if __name__=="__main__":
 
     parser.add_argument("--root", "--path", "--data", type=str, default="coco-data", help="The root directory that you want to store the image and annotation data. Default: ./coco-data")
     parser.add_argument("--num-workers", "--workers", type=int, default=4, help="Number of simultaneous downloads")
+    parser.add_argument("--no-download", action='store_true', help='If you already downloaded the zip files, call this option')
 
     args = parser.parse_args()
 
@@ -57,9 +58,10 @@ if __name__=="__main__":
     root = os.path.abspath(args.root)
 
     # download zip files from cocodataset.org
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.num_workers) as executor:
-        for folder_name in DL_URLS:
-            executor.submit(download, DL_URLS[folder_name], os.path.join(root, folder_name))
+    if not args.no_download:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.num_workers) as executor:
+            for folder_name in DL_URLS:
+                executor.submit(download, DL_URLS[folder_name], os.path.join(root, folder_name))
 
     # unzip files
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.num_workers) as executor:
