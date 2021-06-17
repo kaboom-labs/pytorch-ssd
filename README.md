@@ -88,8 +88,6 @@ Example of resuming training a model but with different num_epochs and num_worke
 ```bash
 python3 train_ssd.py \
 --resume models/my-experiment-1 \
---epochs 100 \
---workers 8 \
 ```
 
 ## D. Multi-GPU Training
