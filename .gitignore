@@ -3,9 +3,7 @@
 log
 data
 models
-
-coco-data
-oi-data
+output
 runs
 
 
