@@ -77,8 +77,7 @@ python3 train_ssd.py \
 ```bash
 python3 train_ssd.py --resume models/my-experiment-1
 ```
-
-It is possible to override any of the saved resume arguments by passing them in, but be careful.
+If you need to edit the arguments, directly edit the annotations JSON file.
 
 | probably override | be very careful about overriding | never override |
 | --- | --- | --- |
