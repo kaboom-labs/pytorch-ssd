@@ -28,6 +28,7 @@ class Predictor:
         self.timer = Timer()
 
     def predict(self, image, top_k=-1, prob_threshold=None):
+        #@TODO change out cpu numpy with parallel CUDA torch NMS 
         cpu_device = torch.device("cpu")
         height, width, _ = image.shape
         image = self.transform(image)
