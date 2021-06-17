@@ -1,5 +1,6 @@
 import time
 import torch
+from collections import OrderedDict
 
 
 def str2bool(s):
@@ -63,4 +64,37 @@ def xywh_to_xyxy(xywh: list) -> list:
     '''
     return [xywh[0], xywh[1], xywh[0]+xywh[2], xywh[1]+xywh[3]]
 
+def optimizer_to(optim,device):
+    '''
+    move optimizer to GPU. PyTorch doesn't have a '.to(device)' for optimizers as it does for nn.Modules
+    code from: https://discuss.pytorch.org/t/moving-optimizer-from-cpu-to-gpu/96068/3
+    '''
+    for param in optim.state.values():
+        # Not sure there are any global tensors in the state dict
+        if isinstance(param, torch.Tensor):
+            param.data = param.data.to(device)
+            if param._grad is not None:
+                param._grad.data = param._grad.data.to(device)
+        elif isinstance(param, dict):
+            for subparam in param.values():
+                if isinstance(subparam, torch.Tensor):
+                    subparam.data = subparam.data.to(device)
+                    if subparam._grad is not None:
+                        subparam._grad.data = subparam._grad.data.to(device)
+    return optim
 
+def cuda_multi_to_single(net_state_dict):
+    '''
+    Remove 'module.' from model state dict if training on Single GPU.
+    When model is trained on multi GPU, PyTorch adds the 'module.' name
+    fixes https://discuss.pytorch.org/t/solved-keyerror-unexpected-key-module-encoder-embedding-weight-in-state-dict/1686/3
+    '''
+    if torch.cuda.device_count() <= 1:
+        new_net_state_dict = OrderedDict()
+        for k,v in net_state_dict.items():
+            if k[:7] == 'module.':
+                name = k[7:] # remove 'module.' which was added by nn.DataParallel
+            else:
+                name = k
+            new_net_state_dict[name] = v
+    return new_net_state_dict

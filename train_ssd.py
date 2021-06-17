@@ -18,7 +18,7 @@ writer = SummaryWriter()
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
 
-from vision.utils.misc import str2bool, Timer, freeze_net_layers, store_labels
+from vision.utils.misc import str2bool, Timer, freeze_net_layers, store_labels, optimizer_to, cuda_multi_to_single
 from vision.ssd.ssd import MatchPrior
 from vision.ssd.vgg_ssd import create_vgg_ssd
 from vision.ssd.mobilenetv1_ssd import create_mobilenetv1_ssd
@@ -217,34 +217,11 @@ def test(loader, net, criterion, device):
         running_classification_loss += classification_loss.item()
     return running_loss / num, running_regression_loss / num, running_classification_loss / num
 
-# helper function to move optimizer to GPU
-# https://discuss.pytorch.org/t/moving-optimizer-from-cpu-to-gpu/96068/3
-def optimizer_to(optim, device):
-    for param in optim.state.values():
-        # Not sure there are any global tensors in the state dict
-        if isinstance(param, torch.Tensor):
-            param.data = param.data.to(device)
-            if param._grad is not None:
-                param._grad.data = param._grad.data.to(device)
-        elif isinstance(param, dict):
-            for subparam in param.values():
-                if isinstance(subparam, torch.Tensor):
-                    subparam.data = subparam.data.to(device)
-                    if subparam._grad is not None:
-                        subparam._grad.data = subparam._grad.data.to(device)
-
 if __name__ == '__main__':
     timer = Timer()
 
     # start tensorboard
     os.system('tensorboard --logdir runs &')
-
-    # make sure that the checkpoint output dir exists
-    if args.checkpoint_folder:
-        args.checkpoint_folder = os.path.expanduser(args.checkpoint_folder)
-
-        if not os.path.exists(args.checkpoint_folder):
-            os.mkdir(args.checkpoint_folder)
             
     # if requested, load arguments from JSON file in parent folder of checkpoint 
     if args.resume:
@@ -269,6 +246,12 @@ if __name__ == '__main__':
         args.tensorboard = training_args['tensorboard']
 
     logging.info(args)
+
+    # make sure that the checkpoint output dir exists
+    if args.checkpoint_folder:
+        args.checkpoint_folder = os.path.expanduser(args.checkpoint_folder)
+        if not os.path.exists(args.checkpoint_folder):
+            os.mkdir(args.checkpoint_folder)
 
     # select the network architecture and config     
     if args.net == 'vgg16-ssd':
@@ -298,7 +281,7 @@ if __name__ == '__main__':
 
     test_transform = TestTransform(config.image_size, config.image_mean, config.image_std)
 
-    # load datasets (could be multiple)
+    # create training dataset
     logging.info("Prepare training datasets.")
     datasets = []
     for dataset_path in args.datasets:
@@ -331,7 +314,6 @@ if __name__ == '__main__':
             raise ValueError(f"Dataset type {args.dataset_type} is not supported.")
         datasets.append(dataset)
         
-    # create training dataset
     logging.info(f"Stored labels into file {label_file}.")
     train_dataset = ConcatDataset(datasets)
     logging.info("Train dataset size: {}".format(len(train_dataset)))
@@ -348,7 +330,6 @@ if __name__ == '__main__':
         val_dataset = OpenImagesDataset(dataset_path,
                                         transform=test_transform, target_transform=target_transform,
                                         dataset_type="test")
-
     elif args.dataset_type == 'coco':
         val_dataset = COCODataset(dataset_path,
                                         transform=test_transform, 
@@ -364,7 +345,7 @@ if __name__ == '__main__':
                             
     # create the network
     logging.info("Build network.")
-    net = create_net(num_classes) # even if just one GPU, wrap in nn.DataParallel so that it can use checkpoints from multi-gpu trainings
+    net = create_net(num_classes)
     min_loss = -10000.0
     last_epoch = -1
     # freeze certain layers (if requested)
@@ -448,23 +429,13 @@ if __name__ == '__main__':
         except KeyError:
             scheduler = None
 
-        # Remove 'module' entries in model state_dict if single GPU
-        # fixes https://discuss.pytorch.org/t/solved-keyerror-unexpected-key-module-encoder-embedding-weight-in-state-dict/1686/3
-        if torch.cuda.device_count() <= 1:
-            new_net_state_dict = OrderedDict()
-            for k,v in net_state_dict.items():
-                if k[:7] == 'module.':
-                    name = k[7:] # remove 'module.'  from DataParallel
-                else:
-                    name = k
-                new_net_state_dict[name] = v
-            net_state_dict = new_net_state_dict
+        net_state_dict = cuda_multi_to_single(net_state_dict)
         # load state dicts into model and optimizer
         net.load_state_dict(net_state_dict)
         optimizer.load_state_dict(optimizer_state_dict)
 
         net = net.to(DEVICE)
-        optimizer_to(optimizer, DEVICE)
+        optimizer = optimizer_to(optimizer, DEVICE)
         if args.use_cuda and torch.cuda.is_available():
             torch.cuda.empty_cache()
 
@@ -505,6 +476,7 @@ if __name__ == '__main__':
     training_args.update({'tensorboard' : args.tensorboard})
 
     training_args_path = os.path.join(os.path.abspath(args.checkpoint_folder), 'training_args.json')
+    os.remove(training_args_path) #delete old args
 
     with open(training_args_path, 'w') as j:
         json.dump(training_args, j)
@@ -516,8 +488,7 @@ if __name__ == '__main__':
         timer.start("Epoch")
         if scheduler is not None:
             scheduler.step()
-        train(train_loader, net, criterion, optimizer,
-              device=DEVICE, debug_steps=args.debug_steps, epoch=epoch)
+        train(train_loader, net, criterion, optimizer, device=DEVICE, debug_steps=args.debug_steps, epoch=epoch)
         
         if epoch % args.validation_epochs == 0 or epoch == args.num_epochs - 1:
             val_loss, val_regression_loss, val_classification_loss = test(val_loader, net, criterion, DEVICE)
