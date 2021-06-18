@@ -83,7 +83,10 @@ else:
 # load the model checkpoint
 print('loading checkpoint:  ' + args.input)
 
-net.load(args.input)
+combo_checkpoint = torch.load(args.input)
+net_state_dict = combo_checkpoint['weights']
+
+net.load_state_dict(net_state_dict)
 net.to(device)
 net.eval()
 
