@@ -3,6 +3,7 @@ from ..transforms.transforms import *
 # NEW
 import numpy as np
 import albumentations as A
+from copy import copy
 
 
         
@@ -19,15 +20,14 @@ class TrainAugmentation:
         self.size = size
 
     def __call__(self, image, boxes, labels):
-        # make sure bbox boundaries don't exceed image
-        #import IPython; IPython.embed()
-        #boxes[:,0][boxes<0] = 0 # x min
-        #boxes[:,1][boxes<0] = 0 # y min
-        #boxes[:,2][boxes>image.shape(1)] = image.shape(1) # x max
-        #boxes[:,3][boxes>image.shape(0)] = image.shape(0) # y max
 
-        #IPython.embed()
+        # if y_max == y_min, increase y_max by 2 pixels
+        problem_box = boxes[boxes[:,1]==boxes[:,3]]
+        fixed_box = copy(problem_box)
+        fixed_box[:,3] = fixed_box[:,1] + 2
+        boxes[boxes[:,1]==boxes[:,3]] = fixed_box
 
+        # @TODO clip any bounding boxes outside of image area
 
         main_transform = A.Compose([
             A.HorizontalFlip(p=0.5),
@@ -41,7 +41,7 @@ class TrainAugmentation:
             A.Resize(height=self.size, width=self.size),
             A.ToFloat(),
             ],
-            bbox_params=A.BboxParams(format='pascal_voc', min_visibility=0.0, label_fields=['class_categories']))
+            bbox_params=A.BboxParams(format='pascal_voc', min_visibility=0.1, label_fields=['class_categories']))
 
         #sometimes gets ValueError ("y_max is less than or equal to y_min...
         try:
@@ -51,8 +51,8 @@ class TrainAugmentation:
             trans_labels = np.array(transformed['class_categories'], dtype=np.long)
 
         except:
-            import IPython; IPython.embed();exit(1)
             print("\nProblem with main transform. Falling back to minimal transform. From vision/ssd/data_preprocessing.py")
+            import IPython; IPython.embed();exit(1)
             transformed = minimal_transform(image=image, bboxes=boxes, class_categories=labels)
             trans_image = transformed['image']
             trans_boxes = np.array(transformed['bboxes'], dtype=np.float32)
