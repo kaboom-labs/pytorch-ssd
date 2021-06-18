@@ -221,7 +221,8 @@ if __name__ == '__main__':
     timer = Timer()
 
     # start tensorboard
-    os.system('tensorboard --logdir runs &')
+    if args.tensorboard:
+        os.system('tensorboard --logdir runs &')
             
     # if requested, load arguments from JSON file in parent folder of checkpoint 
     if args.resume:
@@ -476,7 +477,6 @@ if __name__ == '__main__':
     training_args.update({'tensorboard' : args.tensorboard})
 
     training_args_path = os.path.join(os.path.abspath(args.checkpoint_folder), 'training_args.json')
-    os.remove(training_args_path) #delete old args
 
     with open(training_args_path, 'w') as j:
         json.dump(training_args, j)

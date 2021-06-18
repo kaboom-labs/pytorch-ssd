@@ -6,6 +6,14 @@ import copy
 import os
 import logging
 
+#debugging
+import matplotlib.pyplot as plt
+from time import sleep
+import matplotlib
+matplotlib.use('Gtk3Agg')
+import matplotlib.pyplot as plt
+import IPython
+
 class OpenImagesDataset:
 
     def __init__(self, root,
@@ -42,7 +50,18 @@ class OpenImagesDataset:
         labels = copy.copy(image_info['labels'])
         
         if self.transform:
+
+            # PRIOR TO TRANSFORM
+            #plt.imshow(image)
+            #plt.show()
+
             image, boxes, labels = self.transform(image, boxes, labels)
+
+            # VISUALIZE TRANSFORMATIONS
+            #np_image = np.moveaxis(image, 0 ,-1)
+            #plt.imshow(np_image)
+            #plt.show()
+
         if self.target_transform:
             boxes, labels = self.target_transform(boxes, labels)
         return image_info['image_id'], image, boxes, labels
