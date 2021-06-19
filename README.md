@@ -15,6 +15,7 @@ pip install -r requirements.txt
 + B. Use COCO dataset to train Object Detection
 + C. Comprehensive Checkpoints and Exact Resume
 + D. Multi-GPU Training
++ E. Albumentations; faster image augmentation
 
 ## A. Provenance for this code
 + [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): initial implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
@@ -93,3 +94,11 @@ python3 train_ssd.py \
 ## D. Multi-GPU Training
 
 With `kaboom-labs/pytorch-ssd/train_ssd.py`, you can freely go between single GPU and multi GPU training environments without making any changes. 
+
+## E. Albumentations; faster image augmentation
+Not only does the original image augmentations modify the image way too radically, it is slow.
+
+I replaced it with [albumentations](https://github.com/albumentations-team/albumentations), an optimized image augmentation library.
+Results:
++ 2.5x faster training, because CPU doesn't block GPU ops. Went from ~50% GPU usage to ~83%. 2000 secs/epoch to 800 secs/epoch on RTX 2070S
++ 50% less RAM usage
