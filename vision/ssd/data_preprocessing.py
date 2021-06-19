@@ -31,6 +31,7 @@ class TrainAugmentation:
 
         main_transform = A.Compose([
             A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.1),
             A.ColorJitter(brightness=0.7, contrast=0.2, saturation=0.1, hue=0.1, p=0.8),
             A.RandomSizedBBoxSafeCrop(height=self.size, width=self.size),
             A.ToFloat(),
@@ -68,13 +69,25 @@ class TrainAugmentation:
         if torch.isnan(out_image).any():
             print("NAN!")
             import IPython; IPython.embed()
-        out_boxes = trans_boxes
         out_labels = np.array(trans_labels, dtype='int64')
+
+        # pixels->scale[0:1[ for boxes
+        unscaled_boxes = copy(trans_boxes)
+        width = image.shape[1]
+        height = image.shape[0]
+        unscaled_boxes[:,0]/=width
+        unscaled_boxes[:,2]/=width
+        unscaled_boxes[:,1]/=height
+        unscaled_boxes[:,3]/=height
+        out_boxes = copy(unscaled_boxes)
+
+        #import IPython; IPython.embed()
+        #import time; time.sleep(1)
 
         return out_image, out_boxes, out_labels
 
 
-class TrainAugmentation_OLD:
+class TrainAugmentation_old:
     def __init__(self, size, mean=0, std=1.0):
         """
         Args:
@@ -105,7 +118,9 @@ class TrainAugmentation_OLD:
             labels: 1-d array of labels of bounding boxes.
         """
 
-        #augmented = self.augment(img,boxes,labels)
+        augmented = self.augment(img,boxes,labels)
+        import IPython; IPython.embed()
+        
 
         return self.augment(img, boxes, labels)
 

@@ -1,6 +1,9 @@
 #
 # train an SSD model on Pascal VOC, Open Images, or COCO datasets
 #
+import cv2 #, then import
+import torch #. This fixes https://github.com/pytorch/pytorch/issues/33296
+
 import os
 import sys
 import logging
