@@ -102,3 +102,7 @@ I replaced it with [albumentations](https://github.com/albumentations-team/album
 Results:
 + 2.5x faster training, because CPU doesn't block GPU ops. Went from ~50% GPU usage to ~83%. 2000 secs/epoch to 800 secs/epoch on RTX 2070S
 + 50% less RAM usage
+
+## F. Half precision training
+
+40% faster training with NVIDIA Mixed Precision (AMP) & PyTorch integration. See: https://pytorch.org/blog/accelerating-training-on-nvidia-gpus-with-pytorch-automatic-mixed-precision/
