@@ -8,6 +8,10 @@ import logging
 
 from ..utils.misc import xywh_to_xyxy
 
+
+# visualization
+from vision.utils.visualization import plot_image_grid, make_square
+
 # COCO Dataset 
 from pycocotools.coco import COCO # install from cocoapi
 
@@ -15,7 +19,7 @@ class COCODataset:
 
     def __init__(self, root,
                  transform=None, target_transform=None,
-                 dataset_type="train", balance_data=False):
+                 dataset_type="train", balance_data=False, viz_inputs=False):
         self.root = pathlib.Path(root)
         self.dataset_type = dataset_type.lower()
         self.coco = self._load_cocoapi()
@@ -32,6 +36,7 @@ class COCODataset:
         self.class_stat = None
 
         self.id_to_filename = self._id_to_filename()
+        self.viz_inputs = viz_inputs
 
     def _load_cocoapi(self):
         annotation_file = os.path.join(self.root, 'annotations', f'instances_{self.dataset_type}2017.json')
@@ -56,10 +61,51 @@ class COCODataset:
         boxes = copy.copy(image_info['boxes'])
         # duplicate labels to prevent corruption of dataset
         labels = copy.copy(image_info['labels'])
+
+        # Compare images before and after transform
+        if self.viz_inputs: #BEFORE
+            image_before = copy.copy(image)
+            sq_image_before = make_square(image_before, (0,0,0), 300) # change for SSD-512 or others that aren't 300 square
+
         if self.transform:
             image, boxes, labels = self.transform(image, boxes, labels)
+
+        if self.viz_inputs:
+            image_after = np.moveaxis(image.numpy(), 0, -1) 
+            image_overlay = copy.copy(image_after)
+            for i in range(boxes.shape[0]):
+                box = boxes[i]
+                cv2.rectangle(image_overlay, 
+                        (int(box[0]), int(box[1])), 
+                        (int(box[2]), int(box[3])), 
+                        (255,255,0), 
+                        4)
+                label = f"{labels[i]}"
+                cv2.putText(image_overlay, 
+                        label, 
+                        (int(box[0]) + 20, int(box[1]) + 30), 
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, #font scale
+                        (255,0,255),
+                        2) # line type
+
+            plot_image_grid([sq_image_before, image_after, image_overlay])
+
+        #import IPython; IPython.embed()
+
+        # boxes normalized from pixels to [0,1] range
+        width = image.shape[1] # ACTUALLY, not sure which one is which
+        height = image.shape[2]
+        boxes[:,0] /= width
+        boxes[:,1] /= height
+        boxes[:,2] /= width
+        boxes[:,3] /= height
+
+
         if self.target_transform:
             boxes, labels = self.target_transform(boxes, labels)
+
+
         return image_info['image_id'], image, boxes, labels
 
     def __getitem__(self, index):

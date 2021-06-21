@@ -9,7 +9,6 @@ import sys
 import logging
 import argparse
 import itertools
-import torch
 from collections import OrderedDict
 import json
 
@@ -40,6 +39,8 @@ from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
 #DEBUG
 from icecream import ic
 from tqdm import tqdm, trange
+from torch.profiler import profile, record_function, ProfilerActivity
+
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
@@ -131,11 +132,20 @@ parser.add_argument('--checkpoint-folder', '--model-dir', default='models/',
 # Tensorboard integration
 parser.add_argument('--tensorboard', action='store_true',
                     help='Visualize training in tensoboard')
-
+# Profiling
+parser.add_argument('--profile', action='store_true',
+                    help='PyTorch profiler')
+# Visualize input images 
+parser.add_argument('--viz-inputs', action='store_true',
+                    help="Visualize source and augmented images")
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
                     
 args = parser.parse_args()
+
+# arg dependencies
+if args.profile or args.viz_inputs:
+    args.num_workers = 0 # single threaded dataloader for debugging
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and args.use_cuda else "cpu")
 
 if args.use_cuda and torch.cuda.is_available():
@@ -144,6 +154,10 @@ if args.use_cuda and torch.cuda.is_available():
 
 
 def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
+
+    # half precision training
+    scaler = torch.cuda.amp.GradScaler()
+
     sub_epoch = math.ceil(len(loader)/debug_steps)*epoch # subdivide epoch into sub-epochs for reporting to tensorboard
     net.train(True)
     running_loss = 0.0
@@ -158,11 +172,29 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
 
         optimizer.zero_grad()
 
-        confidence, locations = net(images)
-        regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
-        loss = regression_loss + classification_loss
-        loss.backward()
-        optimizer.step()
+        # pytorch profiler
+        if args.profile:
+            with profile(activities = [ProfilerActivity.CPU], record_shapes=True) as prof:
+                with record_function("model_inference"):
+                    net(images)
+            print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
+
+        # casts operations to mixed (half) precision
+        with torch.cuda.amp.autocast():
+            confidence, locations = net(images)
+
+            regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
+            loss = regression_loss + classification_loss
+
+        # half precision: scales the loss, and calls backward() to create scaled gradients
+        scaler.scale(loss).backward()
+
+        # unscales gradients and calls or skips optimizer.step()
+        scaler.step(optimizer)
+        #optimizer.step()
+
+        # half precision: updates the scale for next iteration
+        scaler.update()
 
         running_loss += loss.item()
         running_regression_loss += regression_loss.item()
@@ -218,6 +250,7 @@ def test(loader, net, criterion, device):
         running_loss += loss.item()
         running_regression_loss += regression_loss.item()
         running_classification_loss += classification_loss.item()
+
     return running_loss / num, running_regression_loss / num, running_classification_loss / num
 
 if __name__ == '__main__':
@@ -299,7 +332,7 @@ if __name__ == '__main__':
         elif args.dataset_type.lower() == 'open_images':
             dataset = OpenImagesDataset(dataset_path,
                  transform=train_transform, target_transform=target_transform,
-                 dataset_type="train", balance_data=args.balance_data)
+                 dataset_type="train", balance_data=args.balance_data, viz_inputs=args.viz_inputs)
             label_file = os.path.join(args.checkpoint_folder, "labels.txt")
             store_labels(label_file, dataset.class_names)
             logging.info(dataset)
@@ -308,7 +341,7 @@ if __name__ == '__main__':
             dataset = COCODataset(dataset_path,
                     transform=train_transform,
                     target_transform=target_transform,
-                    dataset_type="train")
+                    dataset_type="train", viz_inputs=args.viz_inputs)
             label_file = os.path.join(args.checkpoint_folder, "labels.txt")
             store_labels(label_file, dataset.class_names)
             logging.info(dataset)
@@ -502,6 +535,10 @@ if __name__ == '__main__':
                 f"Validation Classification Loss: {val_classification_loss:.4f}"
             )
             model_path = os.path.join(args.checkpoint_folder, f"COMBO_CHECKPOINT_{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
+
+            writer.add_scalar("Val Loss", val_loss, epoch)
+            writer.add_scalar("Val Regression Loss", val_regression_loss, epoch)
+            writer.add_scalar("Val Classification Loss", val_classification_loss, epoch)
 
             # save more comprehensive checkpoint that includes optimizer and scheduler.
             # to load just net weights (for eval), `torch.load(combo_checkpoint)['weights']`

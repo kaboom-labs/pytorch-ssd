@@ -7,18 +7,13 @@ import os
 import logging
 
 #debugging
-import matplotlib.pyplot as plt
-from time import sleep
-import matplotlib
-matplotlib.use('Gtk3Agg')
-import matplotlib.pyplot as plt
-import IPython
+from vision.utils.visualization import plot_image_grid, make_square
 
 class OpenImagesDataset:
 
     def __init__(self, root,
                  transform=None, target_transform=None,
-                 dataset_type="train", balance_data=False):
+                 dataset_type="train", balance_data=False, viz_inputs=False):
         self.root = pathlib.Path(root)
         self.transform = transform
         self.target_transform = target_transform
@@ -32,6 +27,7 @@ class OpenImagesDataset:
         self.ids = [info['image_id'] for info in self.data]
 
         self.class_stat = None
+        self.viz_inputs = viz_inputs
 
     def _getitem(self, index):
         image_info = self.data[index]
@@ -48,22 +44,43 @@ class OpenImagesDataset:
 
         # duplicate labels to prevent corruption of dataset
         labels = copy.copy(image_info['labels'])
+
+        if self.viz_inputs: #visualize raw images
+            image_before = copy.copy(image)
+            sq_image_before = make_square(image_before, (0,0,0), 300)
         
         if self.transform:
-
-            # PRIOR TO TRANSFORM
-            #plt.imshow(image)
-            #plt.show()
-
             image, boxes, labels = self.transform(image, boxes, labels)
 
-            # VISUALIZE TRANSFORMATIONS
-            #np_image = np.moveaxis(image, 0 ,-1)
-            #plt.imshow(np_image)
-            #plt.show()
+        # visualize overlaid bounding boxes
+        if self.viz_inputs:
+            image_after = np.moveaxis(image.numpy(), 0 ,-1)
+            image_overlay = copy.copy(image_after)
+
+            for i in range(boxes.shape[0]):
+                box = boxes[i]
+                cv2.rectangle(image_overlay,
+                        (int(box[0]), int(box[1])),
+                        (int(box[2]), int(box[3])),
+                        (255,255,0),
+                        4)
+                label = f"{labels[i]}"
+                cv2.putText(image_overlay,
+                        label,
+                        (int(box[0]) + 20, int(box[1]) + 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, #font scale
+                        (255,0,255),
+                        2) # line type
+
+            plot_image_grid([sq_image_before, image_after, image_overlay])
 
         if self.target_transform:
-            boxes, labels = self.target_transform(boxes, labels)
+            boxes, labels = self.target_transform(boxes, labels) # creates LOTs of bounding boxes; see paper on SSD for info on 'prior bounding boxes'
+
+
+
+        
         return image_info['image_id'], image, boxes, labels
 
     def __getitem__(self, index):
