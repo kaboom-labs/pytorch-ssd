@@ -41,8 +41,6 @@ from icecream import ic
 from tqdm import tqdm, trange
 from torch.profiler import profile, record_function, ProfilerActivity
 
-# half precision training
-scaler = torch.cuda.amp.GradScaler()
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With PyTorch')
@@ -156,6 +154,10 @@ if args.use_cuda and torch.cuda.is_available():
 
 
 def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
+
+    # half precision training
+    scaler = torch.cuda.amp.GradScaler()
+
     sub_epoch = math.ceil(len(loader)/debug_steps)*epoch # subdivide epoch into sub-epochs for reporting to tensorboard
     net.train(True)
     running_loss = 0.0
@@ -181,8 +183,8 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
         with torch.cuda.amp.autocast():
             confidence, locations = net(images)
 
-        regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
-        loss = regression_loss + classification_loss
+            regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
+            loss = regression_loss + classification_loss
 
         # half precision: scales the loss, and calls backward() to create scaled gradients
         scaler.scale(loss).backward()
