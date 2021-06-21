@@ -61,12 +61,6 @@ for i in range(boxes.size(0)):
     box = boxes[i, :]
 
     box = box.numpy()
-    #ic(orig_image.shape)
-    #ic(type(orig_image))
-    #ic(box[0])
-    #ic(box[1])
-    #ic(box[2])
-    #ic(box[3])
     
     cv2.rectangle(orig_image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 255, 0), 4)
     # OpenCV needs python int, not numpy int. Manual casting fixes https://github.com/opencv/opencv/issues/15465
