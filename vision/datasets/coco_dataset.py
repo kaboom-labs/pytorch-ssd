@@ -12,7 +12,7 @@ from ..utils.misc import xywh_to_xyxy
 # visualization
 from vision.utils.visualization import plot_image_grid, make_square
 
-# COCO Dataset 
+# COCO Dataset
 from pycocotools.coco import COCO # install from cocoapi
 
 class COCODataset:
@@ -37,6 +37,7 @@ class COCODataset:
 
         self.id_to_filename = self._id_to_filename()
         self.viz_inputs = viz_inputs
+        import IPython; IPython.embed()
 
     def _load_cocoapi(self):
         annotation_file = os.path.join(self.root, 'annotations', f'instances_{self.dataset_type}2017.json')
@@ -71,19 +72,19 @@ class COCODataset:
             image, boxes, labels = self.transform(image, boxes, labels)
 
         if self.viz_inputs:
-            image_after = np.moveaxis(image.numpy(), 0, -1) 
+            image_after = np.moveaxis(image.numpy(), 0, -1)
             image_overlay = copy.copy(image_after)
             for i in range(boxes.shape[0]):
                 box = boxes[i]
-                cv2.rectangle(image_overlay, 
-                        (int(box[0]), int(box[1])), 
-                        (int(box[2]), int(box[3])), 
-                        (255,255,0), 
+                cv2.rectangle(image_overlay,
+                        (int(box[0]), int(box[1])),
+                        (int(box[2]), int(box[3])),
+                        (255,255,0),
                         4)
                 label = f"{labels[i]}"
-                cv2.putText(image_overlay, 
-                        label, 
-                        (int(box[0]) + 20, int(box[1]) + 30), 
+                cv2.putText(image_overlay,
+                        label,
+                        (int(box[0]) + 20, int(box[1]) + 30),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.5, #font scale
                         (255,0,255),
@@ -134,7 +135,7 @@ class COCODataset:
         class_dict = {class_name : i for i,class_name in enumerate(class_names)}
 
         # filling out data list
-        all_image_ids = self.coco.getImgIds() 
+        all_image_ids = self.coco.getImgIds()
 
         # how many images were skipped (nonexistent file)
         skipped_images = 0

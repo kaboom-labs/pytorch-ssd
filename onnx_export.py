@@ -77,7 +77,7 @@ elif args.net == 'mb2-ssd-lite':
 elif args.net == 'sq-ssd-lite':
     net = create_squeezenet_ssd_lite(len(class_names), is_test=True)
 else:
-    print("The net type is wrong. It should be one of vgg16-ssd, mb1-ssd and mb1-ssd-lite.")
+    print("The net type is wrong. It should be one of vgg16-ssd, mb1-ssd, mb1-ssd-lite, and mb2-ssd-lite.")
     sys.exit(1)
     
 # load the model checkpoint
