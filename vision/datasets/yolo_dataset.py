@@ -1,4 +1,5 @@
 import numpy as np
+import toml
 import pathlib
 import cv2
 import pandas as pd
@@ -15,60 +16,64 @@ from vision.utils.visualization import plot_image_grid, make_square
 Expected dataset structure:
 root
     |
-    --- video_name (frames and annotations are extracted from this .mp4)
-        |--- det_labels
-        |   |---[video_name_frameNumber].txt
-        |       where each row is: "category x_min y_min x_max, y_max confidence"),
-        |           where xyxy is normalized (0,1)
-        |              .
-        |              .
-        |--- det_stills
-            |---[stills_frameNumber].jpg
-                    .
-                    .
-                    .
+    |--- video_name (frames and annotations are extracted from this .mp4)
+    |    |--- det_labels
+    |    |   |---[labels_frameNumber].txt
+    |    |       where each row is: "category x_min y_min x_max, y_max confidence"),
+    |    |           where xyxy is normalized (0,1)
+    |    |              .
+    |    |              .
+    |    |--- det_stills
+    |        |---[stills_frameNumber].jpg
+    |                .
+    |                .
+    |                .
+    |--- video name
+            .
+            .
+            .
 """
 
-class HydoDataset:
+class YOLODataset:
 
-    def __init__(self, root, plus_categories=[cyclist], transform=None, target_transform=None,
+    def __init__(self, root, transform=None, target_transform=None,
     dataset_type="train", balance_data=False, viz_inputs=False):
 
-    self.root = pathlib.Path(root)
-    self.dataset_type = dataset_type.lower()
-    self.transform = transform
-    self.target_transform = target_transform
+        self.root = pathlib.Path(root)
+        self.dataset_type = dataset_type.lower()
+        self.transform = transform
+        self.target_transform = target_transform
 
-    self.data, self.class_names, self.class_dict = self._read_data()
-    # self.data is a list whose length is number of images
-    #     a given list item is a dictionary, with three keys: 'image_id':int, 'boxes':np.array, 'labels':np.array
-    #           'boxes' has shape (N,4), where N is number of bounding boxes per image, and bounding box format is [xmin,ymin,xmax,ymax] (pixels)
-    #           'labels' has shape (N)
-    # self.class_names is a list of strings, where each string is name of category.
-    #       Importantly, the first item must be "BACKGROUND"
-    # self.class_dict is a dictionary, where {"category_name":int(consecutive number)}. It is just an enumerated self.class_names
+        self.data, self.class_names, self.class_dict = self._read_data()
+        # self.data is a list whose length is number of images
+        #     a given list item is a dictionary, with three keys: 'image_id':int, 'boxes':np.array, 'labels':np.array
+        #           'boxes' has shape (N,4), where N is number of bounding boxes per image, and bounding box format is [xmin,ymin,xmax,ymax] (pixels)
+        #           'labels' has shape (N)
+        # self.class_names is a list of strings, where each string is name of category.
+        #       Importantly, the first item must be "BACKGROUND"
+        # self.class_dict is a dictionary, where {"category_name":int(consecutive number)}. It is just an enumerated self.class_names
 
-    self.ids
-    self.balance_data = balance_data
-    self.min_image_num = -1
-    if self.balance_data:
-        self.data = self.balance_data()
+        self.balance_data = balance_data
+        self.min_image_num = -1
+        if self.balance_data:
+            self.data = self.balance_data()
 
-    self.class_stat = None
-    self.viz_inputs = viz_inputs
+        self.class_stat = None
+        self.viz_inputs = viz_inputs
+        import IPython; IPython.embed()
 
     def _read_data(self):
-        summary_json = json.loads(self.data / "summary.json")
+        summary = toml.load(str(self.root / "summary.toml"))
         class_dict = {'BACKGROUND':0} #SSD needs this 0th empty label for training
-        class_dict.update(summary_json["categories"])
-        class_names = [key for key:value in class_dict]
+        class_dict.update(summary["categories"])
+        class_names = [key for key in class_dict.keys()]
         data = []
         class_dict = {}
-        video_name_dirs = [x for x in self.root if x.is_dir()]
+        video_name_dirs = [x for x in self.root.iterdir() if x.is_dir()]
         for video_name_dir in video_name_dirs:
             det_labels_paths = (video_name_dir / "det_labels").glob('*.txt')
             det_stills_paths = (video_name_dir / "det_stills").glob('*.jpg')
-            assert len(det_labels_paths) == len(det_stills_paths) # number of label file should match number of images
+            assert len(list(det_labels_paths)) == len(list(det_stills_paths)) # number of label file should match number of images
 
         for det_labels_path in det_labels_paths:
             image_path = video_name_dir / Path(det_labels_path.name) / ".jpg"
@@ -78,7 +83,8 @@ class HydoDataset:
             with open(det_labels_path, 'r') as labels_txt:
                 labels_lines = labels_txt.readlines()
                 for line in labels_lines:
-                    boxes = np.vstack(boxes,np.array([[line[1],line[2],line[3],line[4]]]), dtype='float32'))
+                    xyxy_boxes = xywh_to_xyxy([line[1], line[2], line[3], line[4]])
+                    boxes = np.vstack(boxes, np.array(xyxy_boxes, dtype='float32'))
                     labels = np.hstack(labels, np.array([line[0]], dtype='int64'))
             data.append({
                 'image_path':image_path,
@@ -87,7 +93,7 @@ class HydoDataset:
             })
         return data, class_names, class_dict
 
-    def _read_image(self,path)
+    def _read_image(self,path):
         image = cv2.imread(path)
         if image.shape[2] == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
@@ -155,7 +161,7 @@ class HydoDataset:
         if self.class_stat is None:
             self.class_stat = {name:0 for name in self.class_names[:]}
             for example in self.data:
-                for class_index in example['labels:
+                for class_index in example['labels']:
                     class_names = self.class_names[class_index]
                     self.class_stat[class_name] += 1
         content = ["Dataset Summary:"

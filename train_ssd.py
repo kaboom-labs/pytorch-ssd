@@ -30,7 +30,7 @@ from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite
 from vision.datasets.voc_dataset import VOCDataset
 from vision.datasets.open_images import OpenImagesDataset
 from vision.datasets.coco_dataset import COCODataset
-from vision.datasets.hydo_dataset import HydoDataset
+from vision.datasets.yolo_dataset import YOLODataset
 from vision.nn.multibox_loss import MultiboxLoss
 from vision.ssd.config import vgg_ssd_config
 from vision.ssd.config import mobilenetv1_ssd_config
@@ -48,7 +48,7 @@ parser = argparse.ArgumentParser(
 
 # Params for datasets
 parser.add_argument("--dataset-type", default="coco", type=str,
-                    help='Specify dataset type. Currently supports voc,open_images, and coco.')
+                    help='Specify dataset type. Currently supports voc,open_images, coco, and yolo.')
 parser.add_argument('--datasets', '--data', nargs='+', default=["coco-data"], help='Dataset directory path')
 parser.add_argument('--balance-data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
@@ -348,8 +348,8 @@ if __name__ == '__main__':
             logging.info(dataset)
             num_classes = len(dataset.class_names)
 
-        elif args.dataset_type.lower() == 'hydo':
-            dataset = HydoDataset(dataset_path,
+        elif args.dataset_type.lower() == 'yolo':
+            dataset = YOLODataset(dataset_path,
                     transform=train_transform,
                     target_transform=target_transform,
                     dataset_type="train", viz_inputs=args.viz_inputs)
@@ -382,8 +382,8 @@ if __name__ == '__main__':
                                         transform=test_transform, 
                                         target_transform=target_transform,
                                         dataset_type="val")
-    elif args.dataset_type == 'hydo':
-        val_dataset = HydoDataset(dataset_path,
+    elif args.dataset_type == 'yolo':
+        val_dataset = YOLODataset(dataset_path,
                                         transform=test_transform, 
                                         target_transform=target_transform,
                                         dataset_type="val")
