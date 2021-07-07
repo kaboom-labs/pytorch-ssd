@@ -33,12 +33,12 @@ class TrainAugmentation:
         boxes[:,3] = np.minimum(boxes[:,3], image.shape[0])
 
         transform = A.Compose([
-            #A.RandomRotate90(p=0.2),
-            #A.RandomSizedBBoxSafeCrop(height=self.size, width=self.size, p=1.0),
+            A.RandomRotate90(p=0.3),
+            A.RandomSizedBBoxSafeCrop(height=self.size, width=self.size, p=0.8),
             A.Resize(height=self.size, width=self.size), # in case RandomSizedBBox SafeCrop doesn't crop, image still needs to be resized
-            #A.HorizontalFlip(p=0.5),
-            #A.VerticalFlip(p=0.1),
-            #A.ColorJitter(brightness=0.5, contrast=0.2, saturation=0.1, hue=0.1, p=0.9),
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.1),
+            A.ColorJitter(brightness=0.5, contrast=0.3, saturation=0.1, hue=0.1, p=0.9),
             A.ToFloat(),
             ], 
             bbox_params=A.BboxParams(format='pascal_voc', min_visibility=0.0, label_fields=['class_categories'])) # min_visibility=0 is important because SSD needs at least one bounding box
