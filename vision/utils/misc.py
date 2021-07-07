@@ -6,7 +6,6 @@ from collections import OrderedDict
 def str2bool(s):
     return s.lower() in ('true', '1')
 
-
 class Timer:
     def __init__(self):
         self.clock = {}
@@ -57,12 +56,57 @@ def xyxy_to_xywh(xyxy):
 
 def xywh_to_xyxy(xywh: list) -> list:
     '''
+    DO NOT CONFUSE WITH `yolo_to_xyxy`, where the first two are x_center, y_center instead of x_min, y_min
     Convert bounding boxes from
     x_left_top, y_left_top, width, height (pixels)
     to
     x_min, y_min, x_max, y_max
     '''
     return [xywh[0], xywh[1], xywh[0]+xywh[2], xywh[1]+xywh[3]]
+
+def yolo_to_xyxy(yolo: list) -> list:
+    '''
+    x_center, y_center, width, height
+    to
+    x_min, y_min, x_max, y_max
+    '''
+    x_center = yolo[0]
+    y_center = yolo[1]
+    width = yolo[2]
+    height = yolo[3]
+    
+    x_min = x_center - ( width / 2 )
+    y_min = y_center - ( height / 2 )
+    x_max = x_center + ( width / 2 )
+    y_max = y_center + ( width / 2 )
+
+    return [x_min, y_min, x_max, y_max]
+
+def yolo_to_xyxy(yolo: list) -> list:
+    '''
+    x_center, y_center, width, height
+    to
+    x_min, y_min, x_max, y_max
+    '''
+    x_center = yolo[0]
+    y_center = yolo[1]
+    width = yolo[2]
+    height = yolo[3]
+
+    x_min = x_center - ( width / 2 )
+    y_min = y_center - ( height / 2 )
+    x_max = x_center + ( width / 2 )
+    y_max = y_center + ( height / 2 )
+
+    return [x_min, y_min, x_max, y_max]
+
+def xyxy_norm_to_abs(xyxy: list, height:int, width:int) -> list:
+    '''
+    Convert normalized xyxy (0~1)
+    to absolute pixel xyxy (0~height or width of image)
+    '''
+    return [xyxy[0]*width, xyxy[1]*height, xyxy[2]*width, xyxy[3]*height]
+
 
 def optimizer_to(optim,device):
     '''

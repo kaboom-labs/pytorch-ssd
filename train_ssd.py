@@ -1,6 +1,8 @@
 #
 # train an SSD model on Pascal VOC, Open Images, or COCO datasets
 #
+
+# ORDER MATTERS
 import cv2 #, then import
 import torch #. This fixes https://github.com/pytorch/pytorch/issues/33296
 
@@ -181,11 +183,11 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
             print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
 
         # casts operations to mixed (half) precision
-        with torch.cuda.amp.autocast():
-            confidence, locations = net(images)
-
-            regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
-            loss = regression_loss + classification_loss
+        #with torch.cuda.amp.autocast():
+        confidence, locations = net(images)
+        
+        regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)  # TODO CHANGE BOXES
+        loss = regression_loss + classification_loss
 
         # half precision: scales the loss, and calls backward() to create scaled gradients
         scaler.scale(loss).backward()
@@ -551,6 +553,7 @@ if __name__ == '__main__':
             )
             model_path = os.path.join(args.checkpoint_folder, f"COMBO_CHECKPOINT_{args.net}-Epoch-{epoch}-Loss-{val_loss}.pth")
 
+            # tensorboard 
             writer.add_scalar("Val Loss", val_loss, epoch)
             writer.add_scalar("Val Regression Loss", val_regression_loss, epoch)
             writer.add_scalar("Val Classification Loss", val_classification_loss, epoch)

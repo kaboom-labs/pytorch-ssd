@@ -119,7 +119,8 @@ class SSD(nn.Module):
         self.regression_headers.apply(_xavier_init_)
 
     def init_from_pretrained_ssd(self, model):
-        state_dict = torch.load(model, map_location=lambda storage, loc: storage)
+        combo_checkpoint = torch.load(model, map_location=lambda storage, loc:storage)
+        state_dict = combo_checkpoint['weights']
         state_dict = {k: v for k, v in state_dict.items() if not (k.startswith("classification_headers") or k.startswith("regression_headers"))}
         model_dict = self.state_dict()
         model_dict.update(state_dict)

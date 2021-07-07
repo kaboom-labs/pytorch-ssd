@@ -22,26 +22,34 @@ class TrainAugmentation:
     def __call__(self, image, boxes, labels):
 
         # if y_max == y_min, increase y_max by 2 pixels
-        problem_box = boxes[boxes[:,1]==boxes[:,3]]
-        fixed_box = copy(problem_box)
-        fixed_box[:,3] = fixed_box[:,1] + 2
-        boxes[boxes[:,1]==boxes[:,3]] = fixed_box
+        #problem_box = boxes[boxes[:,1]==boxes[:,3]]
+        #fixed_box = copy(problem_box)
+        #fixed_box[:,3] = fixed_box[:,1] + 2
+        #boxes[boxes[:,1]==boxes[:,3]] = fixed_box
+
+        boxes[:,0] = np.maximum(boxes[:,0], 0.0)
+        boxes[:,1] = np.maximum(boxes[:,1], 0.0)
+        boxes[:,2] = np.minimum(boxes[:,2], image.shape[1])
+        boxes[:,3] = np.minimum(boxes[:,3], image.shape[0])
 
         transform = A.Compose([
-            A.RandomRotate90(p=0.2),
-            A.RandomSizedBBoxSafeCrop(height=self.size, width=self.size, p=0.3),
+            #A.RandomRotate90(p=0.2),
+            #A.RandomSizedBBoxSafeCrop(height=self.size, width=self.size, p=1.0),
             A.Resize(height=self.size, width=self.size), # in case RandomSizedBBox SafeCrop doesn't crop, image still needs to be resized
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.1),
-            A.ColorJitter(brightness=0.5, contrast=0.2, saturation=0.1, hue=0.1, p=0.9),
+            #A.HorizontalFlip(p=0.5),
+            #A.VerticalFlip(p=0.1),
+            #A.ColorJitter(brightness=0.5, contrast=0.2, saturation=0.1, hue=0.1, p=0.9),
             A.ToFloat(),
             ], 
             bbox_params=A.BboxParams(format='pascal_voc', min_visibility=0.0, label_fields=['class_categories'])) # min_visibility=0 is important because SSD needs at least one bounding box
         
-        transformed = transform(image=image, bboxes=boxes, class_categories=labels)
-        trans_image = transformed['image']
-        trans_boxes = np.array(transformed['bboxes'], dtype=np.float32)
-        trans_labels = np.array(transformed['class_categories'], dtype=np.long)
+        try:
+            transformed = transform(image=image, bboxes=boxes, class_categories=labels)
+            trans_image = transformed['image']
+            trans_boxes = np.array(transformed['bboxes'], dtype=np.float32)
+            trans_labels = np.array(transformed['class_categories'], dtype=np.long)
+        except:
+            import IPython; IPython.embed()
 
         # cast image from (width, height, channel) to (channel, width, height)
         ch_trans_image = np.array(np.moveaxis(trans_image, -1, 0), dtype=np.float32)
@@ -118,10 +126,17 @@ class TestTransform:
     def __call__(self, image, boxes, labels):
 
         # if y_max == y_min, increase y_max by 2 pixels
+        # prevents area zero boxes
         problem_box = boxes[boxes[:,1]==boxes[:,3]]
         fixed_box = copy(problem_box)
         fixed_box[:,3] = fixed_box[:,1] + 2
         boxes[boxes[:,1]==boxes[:,3]] = fixed_box
+
+        # ensure that boxes don't extend beyond image
+        boxes[:,0] = np.maximum(boxes[:,0], 0.0)
+        boxes[:,1] = np.maximum(boxes[:,1], 0.0)
+        boxes[:,2] = np.minimum(boxes[:,2], image.shape[1])
+        boxes[:,3] = np.minimum(boxes[:,3], image.shape[0])
 
         transform = A.Compose([
             A.Resize(height=self.size, width=self.size), # in case RandomSizedBBox SafeCrop doesn't crop, image still needs to be resized
