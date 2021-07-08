@@ -48,7 +48,6 @@ net = net.to(DEVICE)
 net.eval()
 
 
-import IPython; IPython.embed()
 if net_type == 'vgg16-ssd':
     predictor = create_vgg_ssd_predictor(net, candidate_size=200)
 elif net_type == 'mb1-ssd':
@@ -69,15 +68,14 @@ frame_width = int(cap.get(3))
 frame_height =int(cap.get(4))
 
 # define codec for video output
-out = cv2.VideoWriter('video_ssd_output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width, frame_height))
+out = cv2.VideoWriter('video_ssd_output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 60, (frame_width, frame_height))
 
 frame_count = 0
 frame_time = time.time()
 while cap.isOpened():
     ret, frame = cap.read()
     if ret == False:
-        print("Unable to read video source (camera) feed")
-        exit(1)
+        break;
     #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     boxes, labels, probs = predictor.predict(frame, 10, 0.4)
 
