@@ -37,7 +37,6 @@ class COCODataset:
 
         self.id_to_filename = self._id_to_filename()
         self.viz_inputs = viz_inputs
-        import IPython; IPython.embed()
 
     def _load_cocoapi(self):
         annotation_file = os.path.join(self.root, 'annotations', f'instances_{self.dataset_type}2017.json')
@@ -92,7 +91,6 @@ class COCODataset:
 
             plot_image_grid([sq_image_before, image_after, image_overlay])
 
-        #import IPython; IPython.embed()
 
         # boxes normalized from pixels to [0,1] range
         width = image.shape[1] # ACTUALLY, not sure which one is which
