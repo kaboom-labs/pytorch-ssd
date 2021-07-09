@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 
 ## Table of Contents
-+ [Provenance for this code](#a-provenance-for-this-code)
++ [Provenance for this code](#provenance-for-this-code)
 + B. Use COCO dataset to train Object Detection
 + C. Comprehensive Checkpoints and Exact Resume
 + D. Multi-GPU Training
