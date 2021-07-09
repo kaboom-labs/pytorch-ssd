@@ -13,6 +13,7 @@ pip install -r requirements.txt
 ## Table of Contents
 + [Provenance for this code](#provenance-for-this-code)
 + [How to pretrain SSD object detector on COCO dataset](#how-to-pretrain-ssd-object-detector-on-coco-dataset)
++ [How to fine-tune SSD on custom YOLO-style dataset](#how-to-find-tune-ssd-on-custom-yolo-style-dataset)
 + [Tensorboard](#tensorboard)
 + [Comprehensive Checkpoints and Exact Resume](#comprehensive-checkpoints-and-exact-resume)
 + [Multi-GPU Training](#multi-gpu-training)
@@ -69,6 +70,16 @@ python3 train_ssd.py \
 --epochs=100 \
 --workers=12 \ # match to CPU cores for faster performance
 --checkpoint-folder=models/my-experiment-1
+```
+
+## How to fine-tune SSD on custom YOLO-style dataset
+
+```bash
+python3 train_ssd.py \
+--dataset-type=yolo \
+--net=mb2-ssd-lite \
+--pretrained-ssd=models/pretrained_run/COMBO_CHECKPOINT...pth \
+--checkpoint-folder=models/fine-tuned-model
 ```
 
 ## Comprehensive Checkpoints and Exact Resume
