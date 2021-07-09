@@ -81,20 +81,10 @@ python3 train_ssd.py --resume models/my-experiment-1
 ```
 If you need to edit the arguments, directly edit the annotations JSON file.
 
-| probably override | be very careful about overriding | never override |
-| --- | --- | --- |
-| `epoch` `workers` | `datasets (needs to have same classes and preprocessing)` | all others |
-
-Example of resuming training a model but with different num_epochs and num_workers
-
-```bash
-python3 train_ssd.py \
---resume models/my-experiment-1 \
-```
-
 ## D. Multi-GPU Training
 
-With `kaboom-labs/pytorch-ssd/train_ssd.py`, you can freely go between single GPU and multi GPU training environments without making any changes. 
+Automatic multi-GPU training is enabled.
+Use the exact same script & weights to train on a multiple GPUs or a single GPU.
 
 ## E. Albumentations; faster image augmentation
 Not only does the original image augmentations modify the image way too radically, it is slow.
