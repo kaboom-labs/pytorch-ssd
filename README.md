@@ -12,10 +12,10 @@ pip install -r requirements.txt
 
 ## Table of Contents
 + [Provenance for this code](#provenance-for-this-code)
-+ B. Use COCO dataset to train Object Detection
-+ C. Comprehensive Checkpoints and Exact Resume
-+ D. Multi-GPU Training
-+ E. Albumentations; faster image augmentation
++ [How to pretrain SSD object detector on COCO dataset](#how-to-pretrain-ssd-object-detector-on-coco-dataset)
++ [Comprehensive Checkpoints and Exact Resume](#comprehensive-checkpoints-and-exact-resume)
++ [Multi-GPU Training](#multi-gpu-training)
++ [Albumentations; faster image augmentation](#albumentations-faster-image-augmentation)
 
 ## Provenance for this code
 + [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): initial implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
@@ -23,7 +23,7 @@ pip install -r requirements.txt
 + ***This repository*** [kaboom-labs/pytorch-ssd](https://github.com/kaboom-labs/pytorch-ssd): Train on COCO, 4.7x faster training than upstream repos.
 
 
-## B. How to pretrain SSD object detector on COCO dataset
+## How to pretrain SSD object detector on COCO dataset
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
