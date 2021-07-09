@@ -23,7 +23,7 @@ pip install -r requirements.txt
 + ***This repository*** [kaboom-labs/pytorch-ssd](https://github.com/kaboom-labs/pytorch-ssd): Train on COCO, 4.7x faster training than upstream repos.
 
 
-## B. Use COCO dataset to train Object Detection
+## B. How to use COCO dataset to train SSD object detector
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
@@ -54,6 +54,18 @@ The script `fix_coco_annotations.py` addresses this problem by re-assigning zero
 ```bash
 python3 fix_coco_annotations.py --path coco-data
 ```
+### 4. Start training.
+
+**To initialize training, define checkpoint folder path and other arguments**
+```bash
+python3 train_ssd.py \
+--dataset-type=coco \
+--datasets=coco-data \
+--net=mb2-ssd-lite \
+--epochs=100 \
+--workers=12 \ # match to CPU cores for faster performance
+--checkpoint-folder=models/my-experiment-1
+```
 
 ## C. Comprehensive Checkpoints and Exact Resume
 
@@ -64,20 +76,12 @@ This is because the optimizer and learning rate scheduler states are not saved, 
 
 The solution here is to save the model weights, optimizer state, learning rate scheduler state, and epoch number for each epoch, and also to have a JSON file in the checkpoint folder that contains the arguments.
 
-**To initialize training, define checkpoint folder path and other arguments**
-```bash
-python3 train_ssd.py \
---dataset-type=coco \
---datasets coco-data \
---net mb2-ssd-lite \
---epochs 100 \
---workers 12 \ # match to CPU cores for faster performance
---checkpoint-folder models/my-experiment-1
-```
 
 **To resume training without any changes, pass in checkpoint folder path to --resume**
+
+For example, resume from last saved epoch (77). The script will find the JSON file containing the arguments and use them.
 ```bash
-python3 train_ssd.py --resume models/my-experiment-1
+python3 train_ssd.py --resume models/my-experiment-1/COMBO_CHECKPOINT...Epoch-77....pth
 ```
 If you need to edit the arguments, directly edit the annotations JSON file.
 
