@@ -11,13 +11,13 @@ pip install -r requirements.txt
 ```
 
 ## Table of Contents
-+ [A. Provenance for this code](#a.-provenance-for-this-code)
++ [Provenance for this code](#a-provenance-for-this-code)
 + B. Use COCO dataset to train Object Detection
 + C. Comprehensive Checkpoints and Exact Resume
 + D. Multi-GPU Training
 + E. Albumentations; faster image augmentation
 
-## A. Provenance for this code
+## Provenance for this code
 + [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): initial implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
 + [dusty-nv/pytorch-ssd](https://github.com/dusty-nv/pytorch-ssd): Used for training backend for [dusty-nv/jetson-inference](https://github.com/dusty-nv/jetson-inference). Integrates into NVIDIA Jetson Object Detection capability. See **[Hello AI World](https://github.com/dusty-nv/jetson-inference/tree/dev#training)** tutorial: [Re-training SSD-Mobilenet](https://github.com/dusty-nv/jetson-inference/blob/dev/docs/pytorch-ssd.md)
 + ***This repository*** [kaboom-labs/pytorch-ssd](https://github.com/kaboom-labs/pytorch-ssd): Train on COCO, 4.7x faster training than upstream repos.
