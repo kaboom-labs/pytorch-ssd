@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 
 ## Table of Contents
-+ A. Provenance for this code
++ [A. Provenance for this code](#a.-provenance-for-this-code)
 + B. Use COCO dataset to train Object Detection
 + C. Comprehensive Checkpoints and Exact Resume
 + D. Multi-GPU Training
@@ -23,7 +23,7 @@ pip install -r requirements.txt
 + ***This repository*** [kaboom-labs/pytorch-ssd](https://github.com/kaboom-labs/pytorch-ssd): Train on COCO, 4.7x faster training than upstream repos.
 
 
-## B. How to use COCO dataset to train SSD object detector
+## B. How to pretrain SSD object detector on COCO dataset
 
 **Pro tip: just run `./setup_coco` and skip steps 1~3.**
 
