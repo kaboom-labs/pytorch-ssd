@@ -50,7 +50,7 @@ There should be no problematic images. If this script finds more than a few corr
 COCO 2017 consists of 80 categories of objects.
 However, due to historical reasons, the 'id' number of each category does not line up with the number of categories.
 This becomes a problem in PyTorch MultiBox Loss.
-The script `fix_coco_annotations.py` addresses this problem by re-assigning zero-indexed sequential 'id' numbers to each category for every boudning box annotation.
+The script `fix_coco_annotations.py` addresses this problem by re-assigning zero-indexed sequential 'id' numbers to each category for every bounding box annotation.
 ```bash
 python3 fix_coco_annotations.py --path coco-data
 ```
