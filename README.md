@@ -81,12 +81,16 @@ python3 train_ssd.py --resume models/my-experiment-1
 ```
 If you need to edit the arguments, directly edit the annotations JSON file.
 
-## D. Multi-GPU Training
+## D. Tensorboard
+
+While training, training (very frequent) and validation (epoch) losses are logged to `runs` directory. In the terminal, start `tensorboard --logdir runs` and go to http://localhost:6006 to see results.
+
+## E. Multi-GPU Training
 
 Automatic multi-GPU training is enabled.
 Use the exact same script & weights to train on a multiple GPUs or a single GPU.
 
-## E. Albumentations; faster image augmentation
+## F. Albumentations; faster image augmentation
 Not only does the original image augmentations modify the image way too radically, it is slow.
 
 I replaced it with [albumentations](https://github.com/albumentations-team/albumentations), an optimized image augmentation library.
@@ -94,6 +98,6 @@ Results:
 + 2.5x faster training, because CPU doesn't block GPU ops. Went from ~50% GPU usage to ~83%. 2000 secs/epoch to 800 secs/epoch on RTX 2070S
 + 50% less RAM usage
 
-## F. Half precision training
+## G. Half precision training
 
 40% faster training with NVIDIA Mixed Precision (AMP) & PyTorch integration. See: https://pytorch.org/blog/accelerating-training-on-nvidia-gpus-with-pytorch-automatic-mixed-precision/
