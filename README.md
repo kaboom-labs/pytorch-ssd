@@ -59,9 +59,10 @@ python3 fix_coco_annotations.py --path coco-data
 
 Upstream repos save model weights after each epoch as a `.pth` file.
 
-However, using that one file to resume training causes sudden increase in loss. Also, you needed to repeat all the arguments.
+However, saving only the net state dict is not enough to be able to resume training after stopping. In fact, the loss increases significantly and undoes many tens of epochs of training.
+This is because the optimizer and learning rate scheduler states are not saved, and therefore reset.
 
-The solution is to save the model weights, optimizer state, learning rate scheduler state, and epoch number for each epoch, and also to have one JSON file in the checkpoint folder that contains the arguments. This repo implements this.
+The solution here is to save the model weights, optimizer state, learning rate scheduler state, and epoch number for each epoch, and also to have a JSON file in the checkpoint folder that contains the arguments.
 
 **To initialize training, define checkpoint folder path and other arguments**
 ```bash
