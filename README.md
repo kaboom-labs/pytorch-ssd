@@ -13,9 +13,13 @@ pip install -r requirements.txt
 ## Table of Contents
 + [Provenance for this code](#provenance-for-this-code)
 + [How to pretrain SSD object detector on COCO dataset](#how-to-pretrain-ssd-object-detector-on-coco-dataset)
++ [Tensorboard](#tensorboard)
 + [Comprehensive Checkpoints and Exact Resume](#comprehensive-checkpoints-and-exact-resume)
 + [Multi-GPU Training](#multi-gpu-training)
-+ [Albumentations; faster image augmentation](#albumentations-faster-image-augmentation)
++ [Faster image augmentation with Albumentations](#faster-image-augmentation-with-albumentations)
++ [Half precision training](#half-precision-training)
+
+
 
 ## Provenance for this code
 + [qfgaohao/pytorch-ssd](https://github.com/qfgaohao/pytorch-ssd): initial implementation of [SSD (Single Shot MultiBox Detector)](https://arxiv.org/abs/1512.02325) in PyTorch, using MobileNet backbones. It has out-of-box support for Google Open Images dataset.
@@ -67,7 +71,7 @@ python3 train_ssd.py \
 --checkpoint-folder=models/my-experiment-1
 ```
 
-## C. Comprehensive Checkpoints and Exact Resume
+## Comprehensive Checkpoints and Exact Resume
 
 Upstream repos save model weights after each epoch as a `.pth` file.
 
@@ -85,16 +89,16 @@ python3 train_ssd.py --resume models/my-experiment-1/COMBO_CHECKPOINT...Epoch-77
 ```
 If you need to edit the arguments, directly edit the annotations JSON file.
 
-## D. Tensorboard
+## Tensorboard
 
 While training, training (very frequent) and validation (epoch) losses are logged to `runs` directory. In the terminal, start `tensorboard --logdir runs` and go to http://localhost:6006 to see results.
 
-## E. Multi-GPU Training
+## Multi-GPU Training
 
 Automatic multi-GPU training is enabled.
 Use the exact same script & weights to train on a multiple GPUs or a single GPU.
 
-## F. Albumentations; faster image augmentation
+## Faster image augmentation with Albumentations
 Not only does the original image augmentations modify the image way too radically, it is slow.
 
 I replaced it with [albumentations](https://github.com/albumentations-team/albumentations), an optimized image augmentation library.
@@ -102,6 +106,6 @@ Results:
 + 2.5x faster training, because CPU doesn't block GPU ops. Went from ~50% GPU usage to ~83%. 2000 secs/epoch to 800 secs/epoch on RTX 2070S
 + 50% less RAM usage
 
-## G. Half precision training
+## Half precision training
 
 40% faster training with NVIDIA Mixed Precision (AMP) & PyTorch integration. See: https://pytorch.org/blog/accelerating-training-on-nvidia-gpus-with-pytorch-automatic-mixed-precision/
