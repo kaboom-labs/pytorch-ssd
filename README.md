@@ -1,3 +1,6 @@
+## !!! This repo is deprecated. Newer architectures perform much better than this.
+## For object detection on mobile devices, I recommend [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX)
+
 # SSD-based Object Detection in PyTorch
 
 **Get started: clone this repo with submodules**
